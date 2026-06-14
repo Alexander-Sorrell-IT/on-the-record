@@ -45,11 +45,13 @@ log line.
 ### Dual-tenant cross-anchor
 
 A single tenant can be coerced. So two **independently-claimed** tenants each
-seal the *other's* current chain head into their own chain. Because each
-chain's head is anchored inside the peer's chain, **a single tenant cannot
-rewrite its own history without simultaneously breaking the peer's anchor.**
-Forging the record requires corrupting two separately-claimed tenants at once,
-not one.
+seal the *other's* current chain head into their own chain. Because each chain's
+head is anchored inside the peer's chain, **a single tenant cannot rewrite the
+cross-anchored prefix of its history (up to the most recently mutually-anchored
+head) without breaking the peer's anchor.** Forging that prefix requires
+corrupting two separately-claimed tenants at once, not one. (The shipped demo
+seals at single rows / genesis, so it proves the *mechanism*; the strength of
+the binding is exactly the anchored prefix — see "Honest limits".)
 
 ### The hash rule (one rule, used everywhere)
 
@@ -140,9 +142,9 @@ node on-the-record/verifier.mjs --cross on-the-record/export-a2.json on-the-reco
 node on-the-record/verifier.mjs on-the-record/export.json
 #    -> BROKEN AT seq=<the row you touched>
 
-# 4) The verifier's own test suite (3 positive + 2 negative + structure checks):
+# 4) The verifier's own test suite (8 checks: 3 positive + 2 negative + structure):
 node on-the-record/verifier.test.mjs
-#    -> ALL TESTS PASSED   (8/8)
+#    -> ALL TESTS PASSED
 ```
 
 The verifier ([`verifier.mjs`](verifier.mjs)) recomputes every receipt hash
@@ -193,9 +195,16 @@ We state these plainly because the entry is named "On the Record."
 
 - **Tamper-EVIDENT, not tamper-PROOF.** The chain does not *prevent*
   modification; it makes any modification *detectable*. An adversary with full
-  write access can still delete or rewrite rows — but cannot do so without the
-  verifier reporting `BROKEN AT` (or `CROSS-ANCHOR MISMATCH`). The guarantee is
-  detection, not prevention.
+  write access can still delete or rewrite rows — editing the cross-anchored
+  prefix is caught by the verifier (`BROKEN AT` or `CROSS-ANCHOR MISMATCH`). The
+  guarantee is detection of prefix tampering, not prevention.
+- **Cross-anchor binds the anchored prefix, not the whole future chain.** The
+  immutability guarantee covers each chain only up to the most recently
+  mutually-anchored head. Rows appended *after* the peer's most recent seal are
+  not yet pinned; and a chain anchored at *genesis* (as in the single-row shipped
+  demo) conveys no binding for the genesis-anchored direction. The cross-anchor
+  is shown as the *mechanism*; strengthening it to "final head == anchored head"
+  on both sides requires re-deriving the cross-anchor exports on testnet.
 - **Cross-anchor is demonstrated with two accounts we control.** What is proven
   on testnet is the *mechanism*: two separately-claimed tenants pinning each
   other's heads such that neither can rewrite alone. It is **not** yet a claim
@@ -259,7 +268,8 @@ finished at **13,592 credits**, above the 10,000 floor. Account 2 is never used.
 # keyless: run with the T3N keys (and the model key) unset — the proxy self-sources.
 env -u T3N_API_KEY -u T3N_API_KEY_2 -u T3N_API_KEY_3 -u T3N_KEY -u ANTHROPIC_API_KEY \
   node on-the-record/agent-loop.mjs
-#  -> acts_through_proxy: 3 · verifier: CHAIN OK 5 rows · agent_holds_no_key: true
+#  -> ==== AGENT-LOOP RESULT ==== (a JSON object), including:
+#       "acts_through_proxy": 3, "verifier_cli": "CHAIN OK 5 rows", "agent_holds_no_key": true
 ```
 
 **Transport achieved (honest note):** tier 1 / BEST — a genuine MCP stdio server

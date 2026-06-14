@@ -142,8 +142,12 @@ header('NO SINGLE POINT OF FAILURE');
   line('');
 
   // Tenant B rewrites its OWN single row, then recomputes its own hash so that
-  // B's chain STILL verifies CHAIN OK in isolation. The forgery is only exposed
-  // because A's seal anchored B's *real* head, which B no longer exposes.
+  // B's chain STILL verifies CHAIN OK in isolation. In this shipped single-row
+  // fixture B's only row IS its seal-back to A, so rewriting it changes B's head
+  // AND destroys B's seal of A; either alone breaks the cross-anchor. Here the
+  // verifier reports it at the A->B check: A still anchors B at the head it
+  // sealed (genesis, since B was sealed at genesis), which the rewritten B no
+  // longer exposes as a real head -> CROSS-ANCHOR MISMATCH.
   const bForged = JSON.parse(JSON.stringify(b));
   const r0 = bForged.rows[0];
   r0.action = 'REWRITTEN-HISTORY';
@@ -159,11 +163,12 @@ header('NO SINGLE POINT OF FAILURE');
   line(`  cross-anchor against A    ->  CROSS-ANCHOR MISMATCH`);
   line(`      ${crossForged.reason}`);
   line('');
-  line('  A self-consistent rewrite passes B\'s OWN verifier — but A already');
-  line('  sealed B\'s previous head. To make the forgery stick, B would also have');
-  line('  to rewrite A\'s independently-held chain. One tenant cannot rewrite');
-  line('  history alone. (Shown here with two accounts we control: this is the');
-  line('  mechanism; full independence is when third parties run the anchors.)');
+  line('  A self-consistent rewrite passes B\'s OWN verifier — but A holds an');
+  line('  independent seal of B, and the rewrite no longer matches it. To make the');
+  line('  forgery stick, B would also have to rewrite A\'s independently-held chain.');
+  line('  One tenant cannot rewrite the cross-anchored prefix of its history alone.');
+  line('  (Shown here with two accounts we control: this is the mechanism;');
+  line('  full independence is when third parties run the anchors.)');
 }
 
 // =========================================================================
@@ -188,6 +193,18 @@ header('THE AGENT HOLDS NO KEYS');
     line(`            hash ${short(r.hash)}`);
   }
   line('');
+  // Assert the "0 shipped files" claim instead of merely narrating it: scan
+  // every shipped export's raw JSON for an unmasked sk_ secret (a masked proof
+  // always contains the '****' marker, so it is excluded).
+  const SHIPPED = ['export.json', 'export-a2.json', 'export-a3.json', 'export-agent.json'];
+  // A raw sk_ key is a long run of key characters; a masked proof always carries
+  // the '*' / '…' markers (which are NOT in this class), so masked forms never match.
+  const unmasked = /sk_[A-Za-z0-9_]{12,}/g;
+  for (const f of SHIPPED) {
+    const raw = readFileSync(P(f), 'utf8');
+    const hits = raw.match(unmasked) || [];
+    must(hits.length === 0, `${f} must contain no unmasked sk_ secret (found ${hits.join(', ')})`);
+  }
   line('  The agent decided WHAT to do; the proxy held the authority to do it.');
   line('  The raw key appears in 0 shipped files — only masked proofs are recorded.');
 }

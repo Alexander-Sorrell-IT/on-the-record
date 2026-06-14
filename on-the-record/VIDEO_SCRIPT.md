@@ -168,7 +168,7 @@ CROSS-ANCHOR OK (A head=0092942958fec2bfea808bd2d63804b1977f35212ac70eae5b724d32
 ```
 
 **NARRATION:**
-> A cross-anchor is just another receipt: a `seal` row, hashed through the exact same path. Two separately-claimed tenants each seal the other's chain head into their own, so neither can rewrite its own history alone — the verifier confirms each chain is intact *and* that each seal anchors a head the peer genuinely exposed.
+> A cross-anchor is just another receipt: a `seal` row, hashed through the exact same path. Two separately-claimed tenants each seal the other's chain head into their own, so neither can rewrite the cross-anchored prefix of its history alone — the verifier confirms each chain is intact *and* that each seal anchors a head the peer genuinely exposed.
 
 ---
 
@@ -181,10 +181,13 @@ env -u T3N_API_KEY -u T3N_API_KEY_2 -u T3N_API_KEY_3 -u T3N_KEY -u ANTHROPIC_API
   node agent-loop.mjs
 ```
 
-On-screen result line (from the captured run):
+On-screen result (from the captured run) — `agent-loop.mjs` prints an
+`==== AGENT-LOOP RESULT ====` JSON object; the key fields to highlight:
 
 ```
-acts_through_proxy: 3 · verifier: CHAIN OK 5 rows · agent_holds_no_key: true
+"acts_through_proxy": 3,
+"verifier_cli": "CHAIN OK 5 rows",
+"agent_holds_no_key": true
 ```
 
 Cut to `export-agent.json`: highlight the three new agent rows — `load-policy` (29680), `process-batch:invoices` (29686), `flag-anomaly:txn-4471` (29692) — each `prev_hash` matching the head the agent had just read. Confirm:
@@ -263,7 +266,7 @@ repo root (`on-the-record/`). These are the literal strings to capture:
 | 4 | `node verifier.mjs --cross export-a2.json export-a3.json` | `CROSS-ANCHOR OK (A head=0092…e07a sealed in B; B head=c4ac…8411 sealed in A)` |
 | 5 | `node verifier.mjs export-agent.json` | `CHAIN OK 5 rows` |
 | 6 | `node render-filing.mjs export.json filing.md` | `FILING RENDERED -> …/filing.md` |
-| 7 | keyless agent (keys unset) `node agent-loop.mjs` | `acts_through_proxy: 3 · verifier: CHAIN OK 5 rows · agent_holds_no_key: true` |
+| 7 | keyless agent (keys unset) `node agent-loop.mjs` | `==== AGENT-LOOP RESULT ====` JSON object incl. `"acts_through_proxy": 3`, `"verifier_cli": "CHAIN OK 5 rows"`, `"agent_holds_no_key": true` |
 
 Recording notes:
 - Command 0 (`demo.mjs`) is the headline shot: it runs commands 1–6's logic in one

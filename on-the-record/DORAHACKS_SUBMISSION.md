@@ -62,7 +62,7 @@ Real, registered, on-chain artifacts — captured verbatim into the exports in t
 
 You cannot keep the convenient `allowed` row and quietly drop the inconvenient `denied` one: editing or removing either breaks the chain at that seq.
 
-**The cross-anchor** (`export-a2.json` / `export-a3.json`) — one tenant cannot rewrite its own history alone:
+**The cross-anchor** (`export-a2.json` / `export-a3.json`) — one tenant cannot rewrite the cross-anchored *prefix* of its history alone:
 
 - **A2 seal** — `seq 29401`, head `0092…e07a` (Account 2, id 110).
 - **A3 seal** — `seq 29406`, head `c4ac…8411` (Account 3, id 111), and it **anchors A2's real head `0092…e07a`**.
@@ -100,9 +100,9 @@ node on-the-record/verifier.mjs --cross on-the-record/export-a2.json on-the-reco
 # 3) Tamper test — flip one byte in any row of export.json (don't recompute its hash), re-run #1:
 #    -> BROKEN AT seq=<the row you touched>
 
-# 4) The verifier's own suite (3 positive + 2 negative + structure):
+# 4) The verifier's own suite (8 checks: 3 positive + 2 negative + structure):
 node on-the-record/verifier.test.mjs
-#    -> ALL TESTS PASSED   (8/8)
+#    -> ALL TESTS PASSED
 ```
 
 And open **`on-the-record/filmstrip.html`** in a browser: an interactive integrity toy that recomputes the chain hashes live in-page — drag a byte and watch the chain break. Its crypto matches the CLI verifier exactly.

@@ -18,8 +18,9 @@ decision to an audit map.
 "On the Record" is a **clean-room reframe** of that work into a different and
 more general thing: a **receipt runtime**. The purchase verb and all of its
 buyer/seller/payment framing are gone. In their place is a single general verb,
-`act()`, whose contract is that *acting and producing tamper-evident evidence
-of the act are one atomic in-enclave transaction*. The package namespace was
+`record-action` (exposed to the agent through the custody proxy's `act()` tool),
+whose contract is that *acting and producing tamper-evident evidence of the act
+are one atomic in-enclave transaction*. The package namespace was
 moved from `z:mesh-seller` to `z:on-the-record`, and no `purchase` / `item` /
 `amount_cents` framing remains in the new surface.
 
@@ -56,13 +57,16 @@ None of the following existed in `mesh-seller`. These are the contributions of
   `hash`, where `hash = SHA256(salt ‖ prev_hash ‖ canonical_json(record))`. The
   prior audit map was append-only but had no cryptographic continuity between
   rows; this makes the log tamper-evident, not merely append-ordered.
-- **Generalized `act()`.** The domain-specific `purchase()` is replaced by a
-  single general verb that takes an action and a policy reference, so the
-  runtime records arbitrary governed actions rather than purchases.
+- **Generalized `record-action`.** The domain-specific `purchase()` is replaced
+  by a single general contract verb, `record-action` (surfaced to the agent as
+  the custody proxy's `act()` tool), that takes an action and a policy reference,
+  so the runtime records arbitrary governed actions rather than purchases.
 - **Offline, network-free verifier.** A standalone verifier recomputes the
   whole chain from an exported set of rows and reports `CHAIN OK` or the exact
   index where continuity breaks. The prior work had no independent verifier and
-  nothing reproducible with the network off.
+  nothing reproducible with the network off. (Provenance note: the contract's
+  `get-audit` returns `{salt, events}`; the shipped `proxy/custody.mjs` maps
+  `events` to the `rows` field the verifier reads, so the exports use `rows`.)
 - **Dual-tenant cross-anchor.** Two independently-claimed tenants each seal the
   other's chain head into their own chain (`head()` / `seal_peer()`), over the
   already-proven client `executeAndDecode` transport. Forging history therefore
@@ -73,6 +77,6 @@ None of the following existed in `mesh-seller`. These are the contributions of
 
 Inherited: the in-enclave governance chassis (caller DID, host seq/timestamp,
 namespaced `kv_store`, secret masking, audit-write / get-audit). New: the
-salted hash-chain, the generalized `act()`, the offline verifier, and the
-dual-tenant cross-anchor — i.e., the receipt-runtime category itself. We
+salted hash-chain, the generalized `record-action`, the offline verifier, and
+the dual-tenant cross-anchor — i.e., the receipt-runtime category itself. We
 disclose the shared chassis here deliberately and in full.

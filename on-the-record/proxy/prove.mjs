@@ -1,10 +1,14 @@
 // ============================================================================
 // PROOF HARNESS — drives the MCP custody proxy as an MCP CLIENT over stdio.
 //
-// This process is the "agent". It NEVER sees the T3N key: it only spawns the
-// proxy (which reads the key from its OWN env) and calls MCP tools. The key is
-// passed to the SERVER's env here as a one-time bootstrap; the client (this
-// process) and the tool surface never carry it.
+// This is the OWNER / bootstrap harness, NOT the keyless-agent demonstration.
+// It DOES hold the T3N key: it reads T3N_API_KEY_3 from its own env (below),
+// uses it in-process for owner operations (grant seeding + owner audit/usage
+// reads via custody.mjs), AND forwards it into the spawned server's env. So this
+// process both sees and forwards the key by design — it exists to prove the MCP
+// tool surface works end-to-end and to seed/read as the owner.
+// For the genuinely KEYLESS property (an agent that scrubs every T3N key from
+// its env and reaches the chain only through the proxy), see agent-loop.mjs.
 //
 // Steps:
 //   0. (setup, owner, credit-safe) seed grant:<acct3>="active" on id 111 via a

@@ -107,7 +107,7 @@ node "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/ver
      "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export-a2.json" \
      "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export-a3.json"
 
-# (c) verifier self-tests (3 positive + 2 negative + structure)  -> ALL TESTS PASSED (8/8)
+# (c) verifier self-tests (8 checks: 3 positive + 2 negative + structure)  -> ALL TESTS PASSED
 node "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/verifier.test.mjs"
 
 # (d) render the regulator/audit filing over the verified chain  -> FILING RENDERED
@@ -134,7 +134,10 @@ hash) and re-run (a) — the verifier reports `BROKEN AT seq=<row>`.
   the offline verifier detects it.
 - **Dual-tenant cross-anchor.** Account 2 (id 110) and Account 3 (id 111) each
   seal the other's head; A3 anchors A2's real head `0092…e07a`. Neither can
-  rewrite its own history without breaking the peer's anchor.
+  rewrite the cross-anchored *prefix* of its history (up to the most recently
+  mutually-anchored head) without breaking the peer's anchor. The shipped demo
+  seals at single rows / genesis, so it proves the mechanism; the binding is the
+  anchored prefix (see "Stated honest limit").
 - **Offline verification.** `verifier.mjs` recomputes every hash from the public
   salt with built-in SHA-256 only; 8/8 self-tests pass, including two negative
   cross-anchor cases (forged head, rewritten body).

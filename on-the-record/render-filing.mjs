@@ -20,7 +20,7 @@ import { pathToFileURL } from 'node:url';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
-import { verifyChain, chainHead, tenantDidFromSalt, parseSeal } from './verifier.mjs';
+import { verifyChain, chainHead, parseSeal } from './verifier.mjs';
 
 const HERE = dirname(fileURLToPath(import.meta.url));
 
@@ -69,11 +69,21 @@ export function renderFiling(exportObj, sourcePath) {
         `A filing must only be produced over a verified chain.`,
     );
   }
+  if (!Array.isArray(exportObj.rows) || exportObj.rows.length === 0) {
+    throw new Error(
+      'REFUSING TO RENDER: empty chain (no receipt rows to attest). ' +
+        'A filing must attest at least one receipt.',
+    );
+  }
 
   const rows = [...exportObj.rows].sort((a, b) => a.seq - b.seq);
   const head = chainHead(exportObj);
-  const tenantDid = tenantDidFromSalt(exportObj) || '(unknown — salt not in expected form)';
-  const salt = exportObj.salt_string || exportObj.salt || '';
+  // Derive the attested identity/salt from EXACTLY the field verifyChain hashes
+  // (exportObj.salt), so the displayed tenant DID + salt match the chain that was
+  // cryptographically verified — not a separate salt_string that could diverge.
+  const salt = exportObj.salt || '';
+  const tidMatch = /:v1:([0-9a-f]+)$/.exec(salt);
+  const tenantDid = tidMatch ? `did:t3n:${tidMatch[1]}` : '(unknown — salt not in expected form)';
   const genUtc = new Date().toISOString();
 
   const L = [];
