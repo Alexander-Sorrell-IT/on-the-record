@@ -1,0 +1,17 @@
+{
+  "salt": "on-the-record:v1:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+  "salt_string": "on-the-record:v1:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+  "rows": [
+    {
+      "action": "{\"peer_did\":\"did:t3n:01882ebbf599fcbfc9c6cc562ea4ce7d93135773\",\"peer_head\":\"0092942958fec2bfea808bd2d63804b1977f35212ac70eae5b724d32bd9de07a\",\"type\":\"seal\"}",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "c4acbe4985ffbf61b47698fe56171d01eb2fcea3770b540104c23a7341268411",
+      "masked_secret": "",
+      "outcome": "allowed",
+      "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": "",
+      "seq": 29406,
+      "ts": 1781372175
+    }
+  ]
+}

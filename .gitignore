@@ -1,0 +1,50 @@
+# ============================================================================
+# SECRET HYGIENE — these patterns guarantee no key/secret can ever be committed.
+# .env holds the three T3N private keys; it must NEVER ship.
+# ============================================================================
+
+# --- Secrets: env files (root + any nested) ---
+.env
+.env.*
+**/.env
+**/.env.*
+!.env.example
+
+# --- Convenience symlink (points into ignored node_modules; not a deliverable) ---
+on-the-record/node_modules
+
+# --- Build / dependency dirs (never ship) ---
+# Rust build output (target/) is excluded everywhere: it is large, reproducible
+# via `cargo build`, and the only deliverable inside it (the contract wasm) is
+# committed at a stable path alongside the source instead — see note below.
+node_modules/
+**/node_modules/
+target/
+**/target/
+
+# --- Rehearsal scratch (not part of the entry) ---
+_rehearsal/
+
+# ============================================================================
+# terminal3-agent-mesh/ is an OLDER beta tree that is NOT part of this entry.
+# It contains a real throwaway secp256k1 private key (recon-findings.json) and
+# demo "sk_live_*" tokens (src/*.ts). Ignore the whole tree, then RE-INCLUDE
+# only the shippable contract source: contracts/on-the-record/ and everything
+# under it (target/ is still excluded by the **/target/ rule above, so the
+# build tree does not ship; the deliverable wasm is committed at the stable
+# sibling path noted below).
+#
+# To re-include a path whose parent is ignored, every parent directory must be
+# un-ignored too, and the leaf needs a recursive /** so its contents follow.
+# ============================================================================
+terminal3-agent-mesh/*
+!terminal3-agent-mesh/contracts/
+terminal3-agent-mesh/contracts/*
+!terminal3-agent-mesh/contracts/on-the-record/
+!terminal3-agent-mesh/contracts/on-the-record/**
+
+# Note: there is NO "*.wasm" ignore rule on purpose — the compiled contract
+# artifact is a deliverable and ships. The committed copy lives at the stable
+# path terminal3-agent-mesh/contracts/on-the-record/on_the_record.wasm (a
+# sibling of the source), which is NOT inside any ignored target/ build dir, so
+# it is reliably tracked. The build-tree copy under target/ stays ignored.

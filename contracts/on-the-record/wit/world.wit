@@ -1,0 +1,61 @@
+/// on-the-record — the receipt-runtime TEE contract.
+///
+/// A caller invokes `record-action`. ALL governance is enforced here, inside
+/// the enclave, where the caller cannot tamper with it:
+///   - the caller's identity comes from the host (`calling-user-did`), not the
+///     request body, so a caller cannot impersonate someone else;
+///   - any secret is read INSIDE the enclave and never crosses the WIT boundary
+///     back to the caller (only a masked proof is returned);
+///   - every decision is appended to a contract-only, salted hash-chained audit
+///     trail (the owning tenant retains control-plane access; the chain itself
+///     is offline-verifiable from a public per-tenant salt).
+package z:on-the-record@0.1.0;
+
+world on-the-record {
+    import host:tenant/tenant-context@1.0.0;
+    import host:interfaces/logging@2.1.0;
+    import host:interfaces/kv-store@2.1.0;
+
+    export contracts;
+}
+
+interface contracts {
+    record generic-input {
+        input:        option<list<u8>>,
+        user-profile: option<list<u8>>,
+        context:      option<list<u8>>,
+    }
+
+    /// Caller requests that an action be put on the record.
+    /// Input  (JSON): { "action": string, ... }
+    /// Output (JSON): the chained row { "outcome": "allowed"|"denied", ... }
+    record-action: func(req: generic-input) -> result<list<u8>, string>;
+
+    /// Return the audit trail (every decision the contract made) — contract-written,
+    /// append-only and salted hash-chained; the owning tenant retains control-plane
+    /// access. Restricted to the tenant owner / designated auditors.
+    /// Output (JSON): { "salt": string, "events": [ ... ] }
+    get-audit: func(req: generic-input) -> result<list<u8>, string>;
+
+    /// Owner-only: clear the `trail` map (deterministic demo runs).
+    /// Output (JSON): { "reset": true, "cleared": <n> }
+    reset: func(req: generic-input) -> result<list<u8>, string>;
+
+    /// Owner-only: revoke a caller's grant by setting policy `grant:<did>` =
+    /// "revoked". Input (JSON): { "target_did": "did:t3n:<hex>" }
+    /// Output (JSON): { "revoked": "did:t3n:<hex>" }
+    revoke: func(req: generic-input) -> result<list<u8>, string>;
+
+    /// Read-only: return the calling tenant's chain head (the current tail row's
+    /// `hash`), or 64 zeros if the trail is empty. Appends NO row.
+    /// Output (JSON): { "head": "<64-hex>", "tenant_did": "did:t3n:<hex>" }
+    head: func(req: generic-input) -> result<list<u8>, string>;
+
+    /// Owner-or-approved: cross-anchor a PEER tenant's chain head into this
+    /// tenant's own trail by appending a NORMAL chained row whose action is
+    /// {"type":"seal","peer_did":...,"peer_head":...} and outcome "allowed".
+    /// Just another receipt — it chains via the same audit_write/hash path.
+    /// Input (JSON): { "peer_did": "did:t3n:<hex>", "peer_head": "<64-hex>" }
+    /// Output (JSON): the chained seal row.
+    seal-peer: func(req: generic-input) -> result<list<u8>, string>;
+}

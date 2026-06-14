@@ -1,0 +1,27 @@
+{
+  "salt": "on-the-record:v1:01882ebbf599fcbfc9c6cc562ea4ce7d93135773",
+  "rows": [
+    {
+      "action": "transfer:invoice-7782",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "7ab05ec0d5984c42af7ed52b7aba1680b1e22b489169eeeb630fc7999e93b9a0",
+      "masked_secret": "sk_l…****…2a7c",
+      "outcome": "allowed",
+      "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": "",
+      "seq": 29263,
+      "ts": 1781371735
+    },
+    {
+      "action": "transfer:invoice-7783",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "22eef927bbd43d64c147103da4027a00772ac161aa08c9640d213ff44d37d61a",
+      "masked_secret": "",
+      "outcome": "denied",
+      "prev_hash": "7ab05ec0d5984c42af7ed52b7aba1680b1e22b489169eeeb630fc7999e93b9a0",
+      "reason": "no_active_grant",
+      "seq": 29270,
+      "ts": 1781371736
+    }
+  ]
+}

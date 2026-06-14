@@ -1,0 +1,61 @@
+{
+  "salt": "on-the-record:v1:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+  "salt_string": "on-the-record:v1:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+  "rows": [
+    {
+      "action": "{\"peer_did\":\"did:t3n:01882ebbf599fcbfc9c6cc562ea4ce7d93135773\",\"peer_head\":\"0092942958fec2bfea808bd2d63804b1977f35212ac70eae5b724d32bd9de07a\",\"type\":\"seal\"}",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "c4acbe4985ffbf61b47698fe56171d01eb2fcea3770b540104c23a7341268411",
+      "masked_secret": "",
+      "outcome": "allowed",
+      "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": "",
+      "seq": 29406,
+      "ts": 1781372175
+    },
+    {
+      "action": "proxy-act:invoice-108810",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "40e96e09fed0e6320fb6852fe8a705301f510bb877620ba6a5f86693c35c16da",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "c4acbe4985ffbf61b47698fe56171d01eb2fcea3770b540104c23a7341268411",
+      "reason": "",
+      "seq": 29652,
+      "ts": 1781377109
+    },
+    {
+      "action": "load-policy",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "55252bc98735068d06bbc75e34b049cdd92e175f8ae8cae16a1072f752ee0ff8",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "40e96e09fed0e6320fb6852fe8a705301f510bb877620ba6a5f86693c35c16da",
+      "reason": "",
+      "seq": 29680,
+      "ts": 1781377463
+    },
+    {
+      "action": "process-batch:invoices",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "0210ddacfd30c9b0fb93473705c21c70ad222a5c83cea7cd6aeafccb904695ed",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "55252bc98735068d06bbc75e34b049cdd92e175f8ae8cae16a1072f752ee0ff8",
+      "reason": "",
+      "seq": 29686,
+      "ts": 1781377471
+    },
+    {
+      "action": "flag-anomaly:txn-4471",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "62341a76e2b34c0332359397d45951e84fd916ab9870b8bde2107ea334c1220a",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "0210ddacfd30c9b0fb93473705c21c70ad222a5c83cea7cd6aeafccb904695ed",
+      "reason": "",
+      "seq": 29692,
+      "ts": 1781377478
+    }
+  ]
+}

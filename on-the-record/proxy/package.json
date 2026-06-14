@@ -1,0 +1,11 @@
+{
+  "name": "otr-custody-proxy",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "On the Record — MCP custody proxy. Holds Account 3's T3N key; exposes only recorded verbs (act/file/verify/head). Key never crosses the tool surface.",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@terminal3/t3n-sdk": "^3.5.2"
+  }
+}
