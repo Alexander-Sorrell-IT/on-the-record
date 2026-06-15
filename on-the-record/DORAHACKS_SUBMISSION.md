@@ -62,12 +62,12 @@ Real, registered, on-chain artifacts — captured verbatim into the exports in t
 
 You cannot keep the convenient `allowed` row and quietly drop the inconvenient `denied` one: editing or removing either breaks the chain at that seq.
 
-**The cross-anchor** (`export-a2.json` / `export-a3.json`) — one tenant cannot rewrite the cross-anchored *prefix* of its history alone:
+**The cross-anchor** (`export-a2.json` / `export-a3.json`) — `CROSS-ANCHOR OK` on real testnet data; neither tenant can rewrite its history without breaking the other's anchor:
 
-- **A2 seal** — `seq 29401`, head `0092…e07a` (Account 2, id 110).
-- **A3 seal** — `seq 29406`, head `c4ac…8411` (Account 3, id 111), and it **anchors A2's real head `0092…e07a`**.
+- **A2** (Account 2, id 110) — head `4e9e…0619` (seq 35984), and it **anchors A3's real head `c4ac…8411`**.
+- **A3 seal** (Account 3, id 111) — `seq 29406`, head `c4ac…8411`, and it **anchors A2's real head `0092…e07a`**.
 
-Each chain's head lives inside the peer's chain. Forging the record requires corrupting two separately-claimed tenants at once, not one.
+Each tenant binds the **other's real head**, so the binding holds in both directions. Forging the record requires corrupting two separately-claimed tenants at once, not one.
 
 **The keyless agent** (`export-agent.json`) — a key-free agent reached the chain only through the MCP custody proxy and produced **3 autonomous acts**, each chained onto the head it had just observed:
 
@@ -93,9 +93,9 @@ node on-the-record/demo.mjs
 node on-the-record/verifier.mjs on-the-record/export.json
 #    -> CHAIN OK 2 rows
 
-# 2) The two tenants genuinely anchor each other:
+# 2) The two tenants genuinely anchor each other (both directions bind real heads):
 node on-the-record/verifier.mjs --cross on-the-record/export-a2.json on-the-record/export-a3.json
-#    -> CROSS-ANCHOR OK (A head=0092…e07a sealed in B; B head=c4ac…8411 sealed in A)
+#    -> CROSS-ANCHOR OK (A head=4e9e…0619 bound in B; B head=c4ac…8411 bound in A)
 
 # 3) Tamper test — flip one byte in any row of export.json (don't recompute its hash), re-run #1:
 #    -> BROKEN AT seq=<the row you touched>

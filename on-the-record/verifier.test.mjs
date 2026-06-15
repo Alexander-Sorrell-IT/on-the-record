@@ -5,11 +5,12 @@
 // flips one byte and re-runs -> expects BROKEN AT the right seq.
 //
 // Part B — PROVABLY SOUND cross-anchor (3 states OK / WEAK / MISMATCH). All
-// fixtures here are SYNTHETIC, constructed locally with clearly-fake tenant IDs.
-// They are NOT testnet captures. They exercise every state and every documented
-// attack: the genesis single-row case (WEAK), proper two-row binding (OK), a
-// fabricated peer head (MISMATCH), a shadow attack (MISMATCH), and a post-anchor
-// rewrite of the peer (MISMATCH).
+// states are exercised. The REAL shipped testnet exports now cross-anchor OK
+// (both tenants seal each other's real heads). Every other fixture is SYNTHETIC,
+// constructed locally with clearly-fake tenant IDs (NOT testnet captures): a
+// synthetic genesis-only pair (WEAK), proper two-row binding (OK), a fabricated
+// peer head (MISMATCH), a shadow attack (MISMATCH), and a post-anchor rewrite of
+// the peer (MISMATCH).
 //
 // Pure Node ESM. ZERO SDK. ZERO network. ZERO testnet.
 
@@ -189,18 +190,34 @@ check('tampered chain prints BROKEN AT seq=1', r2.out === 'BROKEN AT seq=1', `go
   check('(a) OK exits 0', r.code === 0, `exit ${r.code}`);
 }
 
-// --- Test 4 (WEAK): the CURRENT shipped genesis single-row case ---
-// Load the real shipped exports. A2 sealed A3 at genesis -> that direction binds
-// nothing -> WEAK overall. This is the honest result and MUST be exit 0.
+// --- Test 4 (OK on REAL data): the shipped testnet exports cross-anchor OK ---
+// Load the real shipped exports. A2 now seals A3's real head, and A3 seals A2's
+// real head -> both directions bind -> CROSS-ANCHOR OK, exit 0. Neither tenant
+// can rewrite its history without breaking the peer's anchor.
 {
   const a2 = JSON.parse(readFileSync(join(HERE, 'export-a2.json'), 'utf8'));
   const a3 = JSON.parse(readFileSync(join(HERE, 'export-a3.json'), 'utf8'));
   const r = runCross(a2, a3);
-  check('(b) shipped genesis single-row -> CROSS-ANCHOR WEAK',
+  check('(b) shipped testnet pair -> CROSS-ANCHOR OK',
+    r.out.startsWith('CROSS-ANCHOR OK'), `got: "${r.out}" (exit ${r.code})`);
+  check('(b) OK names both bound heads',
+    r.out.includes('bound in B') && r.out.includes('bound in A'), `got: "${r.out}"`);
+  check('(b) OK exits 0', r.code === 0, `exit ${r.code}`);
+}
+
+// --- Test 4b (WEAK): a SYNTHETIC genesis-only pair binds nothing yet ---
+// Both tenants seal the other only at GENESIS. Each chain verifies, no forgery,
+// but no real binding exists -> CROSS-ANCHOR WEAK (honest no-binding-yet), exit 0.
+// This retains explicit WEAK-state coverage now that the shipped pair is OK.
+{
+  const aGenesis = buildExport(A_TID, [sealRow(0, A_TID, bDid, GENESIS_PREV)]);
+  const bGenesis = buildExport(B_TID, [sealRow(0, B_TID, aDid, GENESIS_PREV)]);
+  const r = runCross(aGenesis, bGenesis);
+  check('(b2) synthetic genesis-only pair -> CROSS-ANCHOR WEAK',
     r.out.startsWith('CROSS-ANCHOR WEAK'), `got: "${r.out}" (exit ${r.code})`);
-  check('(b) WEAK names the genesis-anchored direction',
+  check('(b2) WEAK names the genesis-anchored direction',
     r.out.includes('genesis') && r.out.includes('no binding'), `got: "${r.out}"`);
-  check('(b) WEAK exits 0 (honest no-binding, not a failure)', r.code === 0, `exit ${r.code}`);
+  check('(b2) WEAK exits 0 (honest no-binding, not a failure)', r.code === 0, `exit ${r.code}`);
 }
 
 // --- Test 5 (MISMATCH): A seals a fabricated peer_head not present in B ---

@@ -51,8 +51,8 @@ verifier.mjs export.json  ->  CHAIN OK 2 rows
 verify tampered copy      ->  BROKEN AT seq=29263
 re-verify original        ->  CHAIN OK 2 rows  (file untouched; tamper was in-memory)
   ->  CROSS-ANCHOR OK
-      A head 0092942958fe…4d32bd9de07a sealed inside B
-      B head c4acbe4985ff…3a7341268411 sealed inside A
+      A head 4e9ebc4e1106…a16394660619 bound in B (A2 seals A3's real head)
+      B head c4acbe4985ff…3a7341268411 bound in A (A3 seals A2's real head)
   cross-anchor against A    ->  CROSS-ANCHOR MISMATCH
 verifier.mjs export-agent.json  ->  CHAIN OK 5 rows
 evidence-hash citations in filing: 2 (one per receipt row — every line is traceable)
@@ -158,17 +158,17 @@ ALL TESTS PASSED
 
 ## BEAT 3 — No single point of failure: cross-anchor (1:35–2:10)
 
-**ON SCREEN:** Show `export-a2.json` (Account 2, tenant A) and `export-a3.json` (Account 3, tenant B) side by side. Highlight that A's seal-row hash `0092…e07a` appears inside B's `action` as `peer_head`. Then run:
+**ON SCREEN:** Show `export-a2.json` (Account 2, tenant A) and `export-a3.json` (Account 3, tenant B) side by side. Highlight that A2's row seals A3's real head `c4ac…8411` as `peer_head`, and A3's seal-row carries A2's real head `0092…e07a` as its `peer_head`. Then run:
 
 ```bash
 node verifier.mjs --cross export-a2.json export-a3.json
 ```
 ```
-CROSS-ANCHOR OK (A head=0092942958fec2bfea808bd2d63804b1977f35212ac70eae5b724d32bd9de07a sealed in B; B head=c4acbe4985ffbf61b47698fe56171d01eb2fcea3770b540104c23a7341268411 sealed in A)
+CROSS-ANCHOR OK (A head=4e9ebc4e11067ccc3f6fe790bdffb331b0bf0abdf50cce648008a16394660619 bound in B; B head=c4acbe4985ffbf61b47698fe56171d01eb2fcea3770b540104c23a7341268411 bound in A)
 ```
 
 **NARRATION:**
-> A cross-anchor is just another receipt: a `seal` row, hashed through the exact same path. Two separately-claimed tenants each seal the other's chain head into their own, so neither can rewrite the cross-anchored prefix of its history alone — the verifier confirms each chain is intact *and* that each seal anchors a head the peer genuinely exposed.
+> A cross-anchor is just another receipt: a `seal` row, hashed through the exact same path. Two separately-claimed tenants each seal the other's real chain head into their own, so neither can rewrite its history without breaking the other's anchor — the verifier confirms each chain is intact *and* that each seal anchors a real head the peer genuinely exposed. Both directions bind: `CROSS-ANCHOR OK`.
 
 ---
 
@@ -263,7 +263,7 @@ repo root (`on-the-record/`). These are the literal strings to capture:
 | 1 | `node verifier.mjs export.json` | `CHAIN OK 2 rows` |
 | 2 | (flip one byte, no rehash) `node verifier.mjs export.json` | `BROKEN AT seq=<the row you touched>` (e.g. `BROKEN AT seq=29270`; `demo.mjs` flips seq 29263 in-memory and prints `BROKEN AT seq=29263`) |
 | 3 | `node verifier.test.mjs` | `ALL TESTS PASSED` (8 checks: 3 positive, 2 negative, structure) |
-| 4 | `node verifier.mjs --cross export-a2.json export-a3.json` | `CROSS-ANCHOR OK (A head=0092…e07a sealed in B; B head=c4ac…8411 sealed in A)` |
+| 4 | `node verifier.mjs --cross export-a2.json export-a3.json` | `CROSS-ANCHOR OK (A head=4e9e…0619 bound in B; B head=c4ac…8411 bound in A)` |
 | 5 | `node verifier.mjs export-agent.json` | `CHAIN OK 5 rows` |
 | 6 | `node render-filing.mjs export.json filing.md` | `FILING RENDERED -> …/filing.md` |
 | 7 | keyless agent (keys unset) `node agent-loop.mjs` | `==== AGENT-LOOP RESULT ====` JSON object incl. `"acts_through_proxy": 3`, `"verifier_cli": "CHAIN OK 5 rows"`, `"agent_holds_no_key": true` |
@@ -276,5 +276,5 @@ Recording notes:
   `demo.mjs` does the flip in-memory (leaving the file untouched) and reports the
   exact `seq` of the byte it changed (`29263`); a manual edit reports whichever
   row you touch.
-- Hash strings are long; on-screen, abbreviate to `0092…e07a` / `c4ac…8411` / `22ee…d61a` for readability, but the verifier prints them in full (fine to show full once, then crop).
+- Hash strings are long; on-screen, abbreviate to `4e9e…0619` (A's head) / `0092…e07a` (A2's row-0, sealed by A3) / `c4ac…8411` (A3's head) / `22ee…d61a` for readability, but the verifier prints them in full (fine to show full once, then crop).
 - The keyless run uses the local `claude` CLI as its brain and needs the proxy/SDK present; if recording offline-only, show the captured result line and `export-agent.json` instead of a live agent run — the verifier still proves it offline via command 5 (and `demo.mjs` section 4 shows the same `CHAIN OK 5 rows`).

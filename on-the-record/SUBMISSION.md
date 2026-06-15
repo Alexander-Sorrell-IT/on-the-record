@@ -50,8 +50,8 @@ Row shape: `{ seq, ts, caller_did, action, outcome('allowed'|'denied'), masked_s
 | Item | Path | Contents |
 |---|---|---|
 | Refusal chain | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export.json` | ALLOWED seq 29263 → DENIED-after-revoke seq 29270 (`reason: no_active_grant`) |
-| Cross-anchor tenant A | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export-a2.json` | Account 2 seal seq 29401, head `0092…e07a` |
-| Cross-anchor tenant B | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export-a3.json` | Account 3 seal seq 29406, head `c4ac…8411` (anchors A2's head) |
+| Cross-anchor tenant A | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export-a2.json` | Account 2, 2 rows; head `4e9e…0619` (seq 35984) seals A3's real head `c4ac…8411` |
+| Cross-anchor tenant B | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export-a3.json` | Account 3 seal seq 29406, head `c4ac…8411`; seals A2's real head `0092…e07a` |
 | Keyless-agent run | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export-agent.json` | 5 rows, CHAIN OK; 3 acts produced by the keyless agent through the proxy (seq 29680 / 29686 / 29692) |
 
 ### MCP custody proxy + keyless agent loop (transport: real MCP stdio — tier 1)
@@ -132,12 +132,13 @@ hash) and re-run (a) — the verifier reports `BROKEN AT seq=<row>`.
 - **Salted hash-chain continuity.** ALLOWED seq 29263 → DENIED seq 29270
   (`no_active_grant`) chains directly; any edit breaks the chain at that seq, and
   the offline verifier detects it.
-- **Dual-tenant cross-anchor.** Account 2 (id 110) and Account 3 (id 111) each
-  seal the other's head; A3 anchors A2's real head `0092…e07a`. Neither can
-  rewrite the cross-anchored *prefix* of its history (up to the most recently
-  mutually-anchored head) without breaking the peer's anchor. The shipped demo
-  seals at single rows / genesis, so it proves the mechanism; the binding is the
-  anchored prefix (see "Stated honest limit").
+- **Dual-tenant cross-anchor (`CROSS-ANCHOR OK` on real testnet data).** Account
+  2 (id 110) and Account 3 (id 111) each seal the other's **real head**: A2's
+  head seals A3's real head `c4ac…8411`, and A3 seals A2's real head `0092…e07a`.
+  Both directions bind, so neither tenant can rewrite its history without
+  breaking the other's anchor. (The two anchors are accounts we control, so this
+  proves the mechanism; full independence is when third parties run the anchors —
+  see "Stated honest limit".)
 - **Offline verification.** `verifier.mjs` recomputes every hash from the public
   salt with built-in SHA-256 only; 8/8 self-tests pass, including two negative
   cross-anchor cases (forged head, rewritten body).

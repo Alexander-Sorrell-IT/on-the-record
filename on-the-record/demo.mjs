@@ -132,26 +132,29 @@ header('TAMPER-EVIDENT');
 header('NO SINGLE POINT OF FAILURE');
 {
   // ---- 3a) The REAL shipped exports, reported HONESTLY --------------------
-  // export-a2.json / export-a3.json are the genesis-anchored single-row pair we
-  // actually captured. A2 sealed A3 at GENESIS (binds nothing yet), while A3
-  // sealed A2's real head. The sound verifier therefore reports WEAK — not OK.
-  // WEAK is an honest "no cryptographic binding in this direction yet", exit 0.
+  // export-a2.json / export-a3.json are the REAL testnet-captured pair. A2 now
+  // seals A3's REAL head, and A3 seals A2's REAL head -> both directions bind.
+  // The sound verifier therefore reports OK: a single tenant cannot rewrite its
+  // own history without also forging the peer's chain, which independently
+  // anchors it.
   const a = load('export-a2.json');
   const b = load('export-a3.json');
   const cross = verifyCrossAnchor(a, b);
-  must(cross.state === 'WEAK', 'shipped a2/a3 cross-anchor must be WEAK (genesis-anchored)');
+  must(cross.state === 'OK', 'shipped a2/a3 cross-anchor must be OK (both real heads bound)');
   line('verifier.mjs --cross export-a2.json export-a3.json  (the REAL shipped exports):');
-  line(`  ->  CROSS-ANCHOR WEAK: ${cross.reason}`);
-  line(`      A2 sealed A3 at GENESIS -> no binding that direction (honest, not OK)`);
-  line(`      A3 sealed A2 head ${short(cross.aHead)} -> a real binding that direction`);
-  line('  WEAK is reported truthfully: the shipped single-row pair does not yet');
-  line('  cross-bind both directions. It is NOT a forgery (so not MISMATCH) and');
-  line('  NOT a full mutual binding (so not OK).');
+  line(`  ->  CROSS-ANCHOR OK`);
+  line(`      A head ${short(cross.aHead)} bound in B (A2 seals A3's real head)`);
+  line(`      B head ${short(cross.bHead)} bound in A (A3 seals A2's real head)`);
+  line('  The two tenants now seal each OTHER\'s real heads. A single tenant cannot');
+  line('  rewrite its own history without also forging the peer\'s chain — which');
+  line('  independently anchors it. Neither can rewrite alone.');
   line('');
 
-  // ---- 3b) A judge re-deriving with proper two-row chains gets OK ----------
-  // Built locally from clearly-synthetic tenant IDs (NOT testnet). Each tenant
-  // appends a seal of the OTHER's real, non-genesis head -> both directions bind.
+  // ---- 3b) The honest WEAK baseline, shown synthetically ------------------
+  // Built locally from clearly-synthetic tenant IDs (NOT testnet). When a tenant
+  // seals its peer only at GENESIS, that direction binds nothing yet -> the sound
+  // verifier reports WEAK: an honest "no cryptographic binding yet", exit 0. This
+  // is the pre-mutual-seal state the shipped pair has now grown out of.
   const T = (h) => Buffer.from(`on-the-record:v1:${h}`, 'utf8').toString('hex');
   const A_TID = 'aa'.repeat(20), B_TID = 'bb'.repeat(20);
   const aDid = `did:t3n:${A_TID}`, bDid = `did:t3n:${B_TID}`;
@@ -184,12 +187,23 @@ header('NO SINGLE POINT OF FAILURE');
   const bSeal = mkRow(saltB, bInit.hash, mkSeal(1, B_TID, aDid, hA));
   const synthB = { salt: saltB, salt_string: `on-the-record:v1:${B_TID}`, rows: [bInit, bSeal] };
 
-  const okCross = verifyCrossAnchor(synthA, synthB);
-  must(okCross.state === 'OK', 'synthetic two-row pair must cross-anchor OK');
-  line('a judge re-deriving with proper two-row chains (SYNTHETIC, locally built — not testnet):');
-  line(`  ->  CROSS-ANCHOR OK`);
-  line(`      A head ${short(okCross.aHead)} bound inside B (real, non-genesis)`);
-  line(`      B head ${short(okCross.bHead)} bound inside A (real, non-genesis)`);
+  // WEAK baseline: each tenant has only sealed the other at GENESIS, so neither
+  // direction binds anything yet (both chains verify, no forgery).
+  const aGenesisOnly = {
+    salt: saltA, salt_string: `on-the-record:v1:${A_TID}`,
+    rows: [mkRow(saltA, Z, mkSeal(0, A_TID, bDid, Z))],
+  };
+  const bGenesisOnly = {
+    salt: saltB, salt_string: `on-the-record:v1:${B_TID}`,
+    rows: [mkRow(saltB, Z, mkSeal(0, B_TID, aDid, Z))],
+  };
+  const weakCross = verifyCrossAnchor(aGenesisOnly, bGenesisOnly);
+  must(weakCross.state === 'WEAK', 'genesis-only synthetic pair must be WEAK');
+  line('a genesis-only pair (SYNTHETIC, locally built — not testnet):');
+  line(`  ->  CROSS-ANCHOR WEAK: ${weakCross.reason}`);
+  line('  WEAK is reported truthfully: a seal that anchors only genesis binds');
+  line('  nothing yet. It is NOT a forgery (so not MISMATCH) and NOT a full mutual');
+  line('  binding (so not OK) — the honest no-binding-yet state.');
   line('');
 
   // ---- 3c) A post-anchor rewrite is caught -> MISMATCH --------------------
@@ -215,10 +229,12 @@ header('NO SINGLE POINT OF FAILURE');
   line('  independent seal of B\'s real head, and the rewrite no longer matches it.');
   line('  To make the forgery stick, B would also have to rewrite A\'s independently');
   line('  held chain. One tenant cannot rewrite cross-anchored history alone.');
-  line('  All three states are shown above: WEAK (shipped, honest no-binding-yet),');
-  line('  OK (real mutual binding), MISMATCH (any forged/rewritten peer head).');
-  line('  (Shown with accounts we control: this is the mechanism; full independence');
-  line('  is when third parties run the anchors.)');
+  line('  All three states are shown above: OK (the REAL shipped pair, real mutual');
+  line('  binding), WEAK (synthetic genesis-only, honest no-binding-yet), MISMATCH');
+  line('  (any forged/rewritten peer head).');
+  line('  (The two anchors here are accounts we control: this proves the mechanism;');
+  line('  full independence is when third parties run the anchors. Tamper-EVIDENT,');
+  line('  not tamper-PROOF.)');
 }
 
 // =========================================================================

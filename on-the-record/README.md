@@ -45,13 +45,14 @@ log line.
 ### Dual-tenant cross-anchor
 
 A single tenant can be coerced. So two **independently-claimed** tenants each
-seal the *other's* current chain head into their own chain. Because each chain's
-head is anchored inside the peer's chain, **a single tenant cannot rewrite the
-cross-anchored prefix of its history (up to the most recently mutually-anchored
-head) without breaking the peer's anchor.** Forging that prefix requires
-corrupting two separately-claimed tenants at once, not one. (The shipped demo
-seals at single rows / genesis, so it proves the *mechanism*; the strength of
-the binding is exactly the anchored prefix — see "Honest limits".)
+seal the *other's* real chain head into their own chain. Because each chain's
+head is anchored inside the peer's chain, **a single tenant cannot rewrite its
+history without also forging the peer's chain — which independently anchors it.**
+On the real shipped testnet exports this binds in **both** directions
+(`CROSS-ANCHOR OK`): forging the record requires corrupting two
+separately-claimed tenants at once, not one. (The two anchors are accounts we
+control, so this proves the *mechanism*; full independence is when third parties
+run the anchors — see "Honest limits".)
 
 ### The hash rule (one rule, used everywhere)
 
@@ -106,21 +107,24 @@ The refusal is cryptographically linked to the action that preceded it. You
 cannot keep the convenient `allowed` row and quietly drop the inconvenient
 `denied` one: removing or editing either row breaks the chain at that seq.
 
-### The cross-anchor (one tenant cannot rewrite its own history alone)
+### The cross-anchor (neither tenant can rewrite its history alone)
 
-Captured in [`export-a2.json`](export-a2.json) (Account 2) and
-[`export-a3.json`](export-a3.json) (Account 3):
+Captured in [`export-a2.json`](export-a2.json) (Account 2, 2 rows) and
+[`export-a3.json`](export-a3.json) (Account 3, 1 row):
 
-- **A2 seal** — `seq 29401`, `hash 00929429…e07a`. A2's seal row anchors A3's
-  head.
+- **A2** — `seq 29401`, `hash 00929429…e07a` (its first row), then `seq 35984`,
+  `hash 4e9ebc4e…0619` (its current head). A2's seal row anchors A3's **real
+  head `c4acbe4985ffbf61b47698fe56171d01eb2fcea3770b540104c23a7341268411`**.
 - **A3 seal** — `seq 29406`, `hash c4acbe49…8411`. A3's seal row anchors A2's
-  head **`0092942958fec2bfea808bd2d63804b1977f35212ac70eae5b724d32bd9de07a`** —
-  i.e. it anchors A2's seal-row hash above.
+  **real head `0092942958fec2bfea808bd2d63804b1977f35212ac70eae5b724d32bd9de07a`**
+  (A2's first-row hash, which still exists in A2's chain).
 
-Because A3's chain contains A2's real head, A2 cannot retroactively change its
-own seal row (that would change its head) without A3's anchor of the old head
-no longer matching. The two chains pin each other. (The offline verifier
-enforces exactly this; see negative tests 4 and 5 below.)
+Each tenant binds the **other's real head**, so the cross-anchor is
+`CROSS-ANCHOR OK` in both directions. A2 cannot rewrite its history without
+changing the head A3 sealed, and A3 cannot rewrite its history without changing
+the head A2 sealed — so neither can rewrite alone without breaking the peer's
+anchor. The two chains pin each other. (The offline verifier enforces exactly
+this; see the negative tests below.)
 
 ---
 
@@ -134,9 +138,9 @@ Node, built-in `crypto` only. Run it from the repo root.
 node on-the-record/verifier.mjs on-the-record/export.json
 #    -> CHAIN OK 2 rows
 
-# 2) The two tenants genuinely anchor each other:
+# 2) The two tenants genuinely anchor each other (both directions bind real heads):
 node on-the-record/verifier.mjs --cross on-the-record/export-a2.json on-the-record/export-a3.json
-#    -> CROSS-ANCHOR OK (A head=0092…e07a sealed in B; B head=c4ac…8411 sealed in A)
+#    -> CROSS-ANCHOR OK (A head=4e9e…0619 bound in B; B head=c4ac…8411 bound in A)
 
 # 3) Tamper — flip one byte in any row of export.json (don't recompute its hash):
 node on-the-record/verifier.mjs on-the-record/export.json
@@ -195,16 +199,15 @@ We state these plainly because the entry is named "On the Record."
 
 - **Tamper-EVIDENT, not tamper-PROOF.** The chain does not *prevent*
   modification; it makes any modification *detectable*. An adversary with full
-  write access can still delete or rewrite rows — editing the cross-anchored
-  prefix is caught by the verifier (`BROKEN AT` or `CROSS-ANCHOR MISMATCH`). The
-  guarantee is detection of prefix tampering, not prevention.
-- **Cross-anchor binds the anchored prefix, not the whole future chain.** The
-  immutability guarantee covers each chain only up to the most recently
-  mutually-anchored head. Rows appended *after* the peer's most recent seal are
-  not yet pinned; and a chain anchored at *genesis* (as in the single-row shipped
-  demo) conveys no binding for the genesis-anchored direction. The cross-anchor
-  is shown as the *mechanism*; strengthening it to "final head == anchored head"
-  on both sides requires re-deriving the cross-anchor exports on testnet.
+  write access can still delete or rewrite rows — any such edit is caught by the
+  verifier (`BROKEN AT` or `CROSS-ANCHOR MISMATCH`). The guarantee is detection,
+  not prevention.
+- **Cross-anchor binds each tenant's history up to the last mutual seal.** On
+  the shipped testnet pair the binding holds in **both** directions
+  (`CROSS-ANCHOR OK`): each tenant seals the other's real head, so neither can
+  rewrite alone. Rows appended *after* the peer's most recent seal are not yet
+  pinned by that seal — re-sealing the new head closes the window, exactly as the
+  shipped pair did to reach mutual OK.
 - **Cross-anchor is demonstrated with two accounts we control.** What is proven
   on testnet is the *mechanism*: two separately-claimed tenants pinning each
   other's heads such that neither can rewrite alone. It is **not** yet a claim
@@ -299,8 +302,8 @@ offline verifier, dual-tenant cross-anchor) are disclosed in full, up front, in
 | [`verifier.mjs`](verifier.mjs) | Offline verifier. Pure Node, zero SDK, zero network. |
 | [`verifier.test.mjs`](verifier.test.mjs) | 8 checks: positive chain, byte-flip, cross-anchor positive + 2 negatives. |
 | [`export.json`](export.json) | Refusal chain: ALLOWED (seq 29263) + DENIED-after-revoke (seq 29270). |
-| [`export-a2.json`](export-a2.json) | Cross-anchor tenant A (Account 2, seal seq 29401). |
-| [`export-a3.json`](export-a3.json) | Cross-anchor tenant B (Account 3, seal seq 29406). |
+| [`export-a2.json`](export-a2.json) | Cross-anchor tenant A (Account 2, 2 rows; head seq 35984 seals A3's real head). |
+| [`export-a3.json`](export-a3.json) | Cross-anchor tenant B (Account 3, seal seq 29406 seals A2's real head). |
 | [`proxy/mcp-server.mjs`](proxy/mcp-server.mjs) | MCP stdio custody proxy. Holds the key (self-sourced from `.env`); exposes `act/head/verify/file`. |
 | [`proxy/custody.mjs`](proxy/custody.mjs) | The only module that touches the key; closure-private, no key getter. |
 | [`agent-loop.mjs`](agent-loop.mjs) | Keyless agent: brain = `claude` CLI, hands = MCP proxy. Asserts no T3N key in its env. |
