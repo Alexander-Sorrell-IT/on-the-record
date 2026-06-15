@@ -81,13 +81,14 @@ export function parseSeal(row) {
   return null;
 }
 
-// The newest "allowed" seal row in `exportObj` that anchors `peerDid`, or null.
+// ALL "allowed" seal rows in `exportObj` that anchor `peerDid`, oldest-first.
+// We deliberately return EVERY seal, not just the newest: a later weaker or
+// forged seal must NOT be allowed to shadow an earlier honest binding.
 export function findSealByPeer(exportObj, peerDid) {
-  const seals = [...exportObj.rows]
+  return [...exportObj.rows]
     .sort((a, b) => a.seq - b.seq)
     .map(parseSeal)
     .filter((s) => s && s.peer_did === peerDid);
-  return seals.length ? seals[seals.length - 1] : null;
 }
 
 // Find a "seal" receipt anchoring a specific (peerDid, peerHead) pair.
@@ -105,63 +106,111 @@ export function tenantDidFromSalt(exportObj) {
   return m ? `did:t3n:${m[1]}` : null;
 }
 
-// The head the OTHER tenant legitimately observed when it sealed this chain.
-// Because the two seals are ordered (one tenant seals first, then the second
-// seals — including the first's seal row), the head a peer sealed is EITHER:
-//   - this chain's final head (it sealed us LAST, after our own seal row), OR
-//   - the prev_hash of OUR seal-back row to that peer (it sealed us FIRST, so
-//     it observed our head right before we appended our seal-to-it row).
-// Both are genuine hashes physically present in this chain, so a forged head
-// (one that is neither) is rejected. peerDid is the tenant that sealed us.
-export function sealableHeads(exportObj, peerDid) {
-  const heads = new Set([chainHead(exportObj)]);
-  const back = findSealByPeer(exportObj, peerDid);
-  if (back && /^[0-9a-f]{64}$/.test(back.row.prev_hash)) heads.add(back.row.prev_hash);
-  return heads;
+// The set of EVERY hash actually present in `exportObj`'s rows. These are the
+// only peer_head values a counter-chain could honestly have sealed: a seal must
+// reference a hash that physically exists in the peer's verified chain.
+export function sealableHeads(exportObj) {
+  return new Set(exportObj.rows.map((r) => r.hash));
 }
 
-// CROSS-ANCHOR check. Asserts:
-//   (i)   each chain individually verifies CHAIN OK,
-//   (ii)  A's chain contains a seal row anchoring B, and the anchored peer_head
-//         is a head B legitimately exposed (B's final head, or B's head right
-//         before B sealed A back),
-//   (iii) symmetrically, B's chain anchors A's exposed head.
-// To forge either chain you must also forge the peer's chain (whose head is
-// anchored inside yours) — no single tenant can rewrite history alone.
-// Returns { ok, reason?, aHead, bHead, aDid, bDid, aSealed, bSealed }.
-export function verifyCrossAnchor(exportA, exportB) {
-  const ca = verifyChain(exportA);
-  if (!ca.ok) return { ok: false, reason: `chain A BROKEN AT seq=${ca.brokenSeq}` };
-  const cb = verifyChain(exportB);
-  if (!cb.ok) return { ok: false, reason: `chain B BROKEN AT seq=${cb.brokenSeq}` };
+// Evaluate ONE direction: SEALER's chain sealing the PEER's chain.
+//   sealerExport : the chain that holds the seal rows
+//   peerExport   : the chain being sealed (already verified CHAIN OK upstream)
+//   peerDid      : the DID of the peer chain
+// Per-direction state machine (see verifyCrossAnchor doc):
+//   - collect ALL seals in sealer naming peer (not just the newest);
+//   - for each seal's peer_head:
+//       not in peer's real hashes AND not genesis  -> forgery   -> MISMATCH
+//       == genesis (64 zeros)                       -> no binding (weak signal)
+//       in peer's real hashes, non-genesis          -> real binding
+//   - verdict: MISMATCH if any forged head; else OK if >=1 real binding;
+//     else WEAK (only genesis seals, or no seals at all).
+// Returns { state: 'OK'|'WEAK'|'MISMATCH', reason?, boundHeads:[...] }.
+function verifyDirection(sealerExport, peerExport, peerDid) {
+  const seals = findSealByPeer(sealerExport, peerDid);
+  const realPeerHashes = sealableHeads(peerExport);
 
-  const aHead = chainHead(exportA);
-  const bHead = chainHead(exportB);
+  const boundHeads = [];
+  for (const seal of seals) {
+    const head = seal.peer_head;
+    if (head === GENESIS_PREV) {
+      continue; // genesis anchor: real seal, but binds nothing
+    }
+    if (!realPeerHashes.has(head)) {
+      // Sealed a non-genesis head that does NOT exist in the peer's verified
+      // chain = fabricated or rewritten peer history. This is the forgery catch.
+      return {
+        state: 'MISMATCH',
+        reason: `sealed a peer head not present in the peer chain: peer_head=${head}`,
+      };
+    }
+    boundHeads.push(head); // a real, non-genesis binding
+  }
+
+  if (boundHeads.length > 0) return { state: 'OK', boundHeads };
+  // No real bindings: either we only saw genesis seals, or no seals at all.
+  return {
+    state: 'WEAK',
+    reason: seals.length === 0
+      ? 'no seal anchoring the peer'
+      : 'anchored at genesis — no binding',
+    boundHeads,
+  };
+}
+
+// CROSS-ANCHOR check — PROVABLY SOUND 3-state semantics. For EACH direction
+// (A's chain sealing B, and B's chain sealing A) we run the per-direction state
+// machine above. A direction is:
+//   MISMATCH if it sealed a non-genesis peer head that does not exist in the
+//            peer's verified chain (fabricated/rewritten history), OR if the
+//            peer chain itself is BROKEN (cannot anchor against fiction);
+//   OK       if at least one seal binds a REAL non-genesis peer head;
+//   WEAK     if every seal anchored only genesis (or there are no seals) —
+//            i.e. no cryptographic binding to the peer's content yet.
+// Overall:
+//   MISMATCH if either direction MISMATCH;
+//   else WEAK if either direction WEAK (and neither MISMATCH);
+//   else OK (both directions bind real non-genesis peer heads).
+// To forge either chain you must also forge the peer's chain (whose real head
+// is bound inside yours) — no single tenant can rewrite cross-anchored history.
+// Returns { state, reason?, aHead, bHead, aDid, bDid, aDir, bDir }.
+export function verifyCrossAnchor(exportA, exportB) {
   const aDid = tenantDidFromSalt(exportA);
   const bDid = tenantDidFromSalt(exportB);
 
-  // (ii) A anchors B: A has a seal row naming B whose peer_head is a head B
-  // legitimately exposed (B's final head OR B's pre-seal-back head).
-  const sealInA = findSealByPeer(exportA, bDid);
-  if (!sealInA) {
-    return { ok: false, reason: `A has no seal anchoring B (${bDid})`, aHead, bHead, aDid, bDid };
-  }
-  const bExposed = sealableHeads(exportB, aDid);
-  if (!bExposed.has(sealInA.peer_head)) {
-    return { ok: false, reason: `A anchors a forged B head: peer_head=${sealInA.peer_head} is not a real B head (B head=${bHead})`, aHead, bHead, aDid, bDid, aSealed: sealInA.peer_head };
-  }
+  // Each chain must independently verify CHAIN OK. A BROKEN peer chain means a
+  // seal can only ever reference fiction -> MISMATCH for that direction.
+  const ca = verifyChain(exportA);
+  const cb = verifyChain(exportB);
 
-  // (iii) B anchors A symmetrically.
-  const sealInB = findSealByPeer(exportB, aDid);
-  if (!sealInB) {
-    return { ok: false, reason: `B has no seal anchoring A (${aDid})`, aHead, bHead, aDid, bDid };
-  }
-  const aExposed = sealableHeads(exportA, bDid);
-  if (!aExposed.has(sealInB.peer_head)) {
-    return { ok: false, reason: `B anchors a forged A head: peer_head=${sealInB.peer_head} is not a real A head (A head=${aHead})`, aHead, bHead, aDid, bDid, bSealed: sealInB.peer_head };
-  }
+  const aHead = ca.ok ? chainHead(exportA) : null;
+  const bHead = cb.ok ? chainHead(exportB) : null;
 
-  return { ok: true, aHead, bHead, aDid, bDid, aSealed: sealInA.peer_head, bSealed: sealInB.peer_head };
+  // Direction A->B: A's chain seals B. Requires B to be a verified chain.
+  const aDir = cb.ok
+    ? verifyDirection(exportA, exportB, bDid)
+    : { state: 'MISMATCH', reason: `peer chain B is BROKEN AT seq=${cb.brokenSeq}` };
+
+  // Direction B->A: B's chain seals A. Requires A to be a verified chain.
+  const bDir = ca.ok
+    ? verifyDirection(exportB, exportA, aDid)
+    : { state: 'MISMATCH', reason: `peer chain A is BROKEN AT seq=${ca.brokenSeq}` };
+
+  const base = { aHead, bHead, aDid, bDid, aDir, bDir };
+
+  if (aDir.state === 'MISMATCH') {
+    return { state: 'MISMATCH', reason: `A->B ${aDir.reason}`, ...base };
+  }
+  if (bDir.state === 'MISMATCH') {
+    return { state: 'MISMATCH', reason: `B->A ${bDir.reason}`, ...base };
+  }
+  if (aDir.state === 'WEAK') {
+    return { state: 'WEAK', which: 'A->B', reason: `A->B ${aDir.reason}`, ...base };
+  }
+  if (bDir.state === 'WEAK') {
+    return { state: 'WEAK', which: 'B->A', reason: `B->A ${bDir.reason}`, ...base };
+  }
+  return { state: 'OK', ...base };
 }
 
 // CLI entrypoint:
@@ -178,8 +227,13 @@ function main() {
     const a = JSON.parse(readFileSync(pa, 'utf8'));
     const b = JSON.parse(readFileSync(pb, 'utf8'));
     const r = verifyCrossAnchor(a, b);
-    if (r.ok) {
-      console.log(`CROSS-ANCHOR OK (A head=${r.aHead} sealed in B; B head=${r.bHead} sealed in A)`);
+    if (r.state === 'OK') {
+      console.log(`CROSS-ANCHOR OK (A head=${r.aHead} bound in B; B head=${r.bHead} bound in A)`);
+      process.exit(0);
+    } else if (r.state === 'WEAK') {
+      // WEAK is an honest "no binding yet", NOT a failure: exit 0 but clearly labeled.
+      // r.reason already carries the direction + cause ("A->B anchored at genesis — no binding").
+      console.log(`CROSS-ANCHOR WEAK: ${r.reason}`);
       process.exit(0);
     } else {
       console.log(`CROSS-ANCHOR MISMATCH: ${r.reason}`);

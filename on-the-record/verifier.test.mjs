@@ -1,18 +1,27 @@
 // Test for the offline receipt-chain verifier.
-// Builds a synthetic 3-row valid chain (computing hashes the SAME way as the
-// verifier), runs the verifier -> expects CHAIN OK, then flips one byte in
-// row 1 and re-runs -> expects BROKEN AT the right seq.
 //
-// Pure Node ESM. ZERO SDK. ZERO network.
+// Part A — single chain: builds a synthetic 3-row valid chain (computing hashes
+// the SAME way as the verifier), runs the verifier -> expects CHAIN OK, then
+// flips one byte and re-runs -> expects BROKEN AT the right seq.
+//
+// Part B — PROVABLY SOUND cross-anchor (3 states OK / WEAK / MISMATCH). All
+// fixtures here are SYNTHETIC, constructed locally with clearly-fake tenant IDs.
+// They are NOT testnet captures. They exercise every state and every documented
+// attack: the genesis single-row case (WEAK), proper two-row binding (OK), a
+// fabricated peer head (MISMATCH), a shadow attack (MISMATCH), and a post-anchor
+// rewrite of the peer (MISMATCH).
+//
+// Pure Node ESM. ZERO SDK. ZERO network. ZERO testnet.
 
-import { writeFileSync, mkdtempSync, rmSync } from 'node:fs';
+import { writeFileSync, mkdtempSync, rmSync, readFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
-import { join } from 'node:path';
+import { join, dirname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import { computeHash, chainHead } from './verifier.mjs';
 
 const VERIFIER = fileURLToPath(new URL('./verifier.mjs', import.meta.url));
+const HERE = dirname(fileURLToPath(import.meta.url));
 const GENESIS_PREV = '0'.repeat(64);
 const SALT = 'a1b2c3d4e5f6071829'.padEnd(64, '0'); // public per-tenant constant (hex)
 
@@ -89,6 +98,13 @@ function buildExport(tidHex, partials) {
   return { salt, salt_string: saltString, rows, did: `did:t3n:${tidHex}` };
 }
 
+function actRow(seq, tidHex, action, secret) {
+  return {
+    seq, ts: 1781371000 + seq, caller_did: `did:t3n:${tidHex}`,
+    action, outcome: 'allowed', masked_secret: secret, reason: '',
+  };
+}
+
 function sealRow(seq, tidHex, peerDid, peerHead) {
   return {
     seq, ts: 1781371000 + seq, caller_did: `did:t3n:${tidHex}`,
@@ -97,37 +113,38 @@ function sealRow(seq, tidHex, peerDid, peerHead) {
   };
 }
 
-// Mirror the real cross-anchor ordering with synthetic chains:
-//   A3 builds an init row (pre-seal head h3).
-//   A2 builds init + seal(A3, h3); A2's final head is h2.
-//   A3 appends seal(A2, h2); A3's final head changes but A2 already anchored h3.
-// Result: A2 anchors A3's pre-seal head; A3 anchors A2's final head.
-function buildCrossPair() {
-  const A2_TID = 'a2'.repeat(20);
-  const A3_TID = 'a3'.repeat(20);
-  const a2Did = `did:t3n:${A2_TID}`;
-  const a3Did = `did:t3n:${A3_TID}`;
+// Clearly-synthetic tenant IDs (repeated nibbles — obviously not real).
+const A_TID = 'aa'.repeat(20);
+const B_TID = 'bb'.repeat(20);
+const aDid = `did:t3n:${A_TID}`;
+const bDid = `did:t3n:${B_TID}`;
 
-  // A3 pre-seal chain (just init).
-  const a3Pre = buildExport(A3_TID, [
-    { seq: 0, ts: 1781371000, caller_did: a3Did, action: 'init', outcome: 'allowed', masked_secret: 'sk_l…****…3333', reason: '' },
+// Build a proper two-direction, NON-GENESIS cross-anchored pair (the OK case).
+// Ordering mirrors the real protocol:
+//   1. B publishes an init row (pre-seal head hB_pre, non-genesis).
+//   2. A publishes init + seal(B, hB_pre). A's head is now hA, non-genesis.
+//   3. B appends seal(A, hA). B's head moves, but A already bound hB_pre, which
+//      STILL exists in B's final chain (B only appended; never rewrote row 0).
+// Result: A binds B's row-0 hash (real, non-genesis); B binds A's head (real,
+// non-genesis). Both directions OK.
+function buildOkPair() {
+  const bPre = buildExport(B_TID, [
+    actRow(0, B_TID, 'init', 'sk_l…****…BBBB'),
   ]);
-  const h3 = chainHead(a3Pre);
+  const hBpre = chainHead(bPre); // B's row-0 hash, non-genesis
 
-  // A2 chain: init + seal(A3, h3). A2's head is now h2.
-  const a2 = buildExport(A2_TID, [
-    { seq: 0, ts: 1781371000, caller_did: a2Did, action: 'init', outcome: 'allowed', masked_secret: 'sk_l…****…2222', reason: '' },
-    sealRow(1, A2_TID, a3Did, h3),
+  const a = buildExport(A_TID, [
+    actRow(0, A_TID, 'init', 'sk_l…****…AAAA'),
+    sealRow(1, A_TID, bDid, hBpre),
   ]);
-  const h2 = chainHead(a2);
+  const hA = chainHead(a); // A's head, non-genesis
 
-  // A3 final chain: init + seal(A2, h2).
-  const a3 = buildExport(A3_TID, [
-    { seq: 0, ts: 1781371000, caller_did: a3Did, action: 'init', outcome: 'allowed', masked_secret: 'sk_l…****…3333', reason: '' },
-    sealRow(1, A3_TID, a2Did, h2),
+  const b = buildExport(B_TID, [
+    actRow(0, B_TID, 'init', 'sk_l…****…BBBB'),
+    sealRow(1, B_TID, aDid, hA),
   ]);
 
-  return { a2, a3, h2, h3, a2Did, a3Did };
+  return { a, b, hA, hBpre };
 }
 
 let failures = 0;
@@ -140,17 +157,18 @@ function check(name, cond, detail) {
   }
 }
 
+// =========================================================================
+// PART A — single-chain verifier (unchanged behaviour)
+// =========================================================================
+
 // --- Test 1: valid chain -> CHAIN OK 3 rows ---
 const valid = buildChain();
 const r1 = runVerifier(valid);
 check('valid chain prints CHAIN OK 3 rows', r1.out === 'CHAIN OK 3 rows', `got: "${r1.out}" (exit ${r1.code})`);
 
 // --- Test 2: flip one byte in row 1 -> BROKEN AT seq=1 ---
-// Tamper with the stored data of row 1 (its masked_secret) WITHOUT recomputing
-// its hash. The recomputed hash for seq=1 will no longer match -> first break at seq=1.
 const tampered = buildChain();
 const ms = tampered.rows[1].masked_secret;
-// flip one byte: change the last char deterministically
 const flipped = ms.slice(0, -1) + (ms.slice(-1) === '2' ? '9' : '2');
 tampered.rows[1].masked_secret = flipped;
 check('byte was actually flipped', tampered.rows[1].masked_secret !== ms);
@@ -158,43 +176,125 @@ check('byte was actually flipped', tampered.rows[1].masked_secret !== ms);
 const r2 = runVerifier(tampered);
 check('tampered chain prints BROKEN AT seq=1', r2.out === 'BROKEN AT seq=1', `got: "${r2.out}" (exit ${r2.code})`);
 
-// --- Test 3: cross-anchor positive -> CROSS-ANCHOR OK ---
-const { a2, a3 } = buildCrossPair();
-const r3 = runCross(a2, a3);
-check('cross-anchor positive prints CROSS-ANCHOR OK', r3.out.startsWith('CROSS-ANCHOR OK'), `got: "${r3.out}" (exit ${r3.code})`);
-check('cross-anchor positive exits 0', r3.code === 0, `exit ${r3.code}`);
+// =========================================================================
+// PART B — PROVABLY SOUND cross-anchor: OK / WEAK / MISMATCH
+// =========================================================================
 
-// --- Test 4 (NEGATIVE): forge A2's head row -> cross-anchor FAILS ---
-// Hand-edit A2's final (seal) row's hash. This both breaks A2's own chain AND
-// changes A2's head, so A3's anchor of the old head no longer matches.
+// --- Test 3 (OK): proper multi-row, both directions bind real NON-GENESIS heads ---
 {
-  const { a2: a2bad, a3: a3good } = buildCrossPair();
-  const last = a2bad.rows[a2bad.rows.length - 1];
-  // flip last hex nibble of the head hash (forged head).
-  const ch = last.hash.slice(-1);
-  last.hash = last.hash.slice(0, -1) + (ch === 'f' ? '0' : 'f');
-  const r4 = runCross(a2bad, a3good);
-  check('forged head -> CROSS-ANCHOR MISMATCH', r4.out.startsWith('CROSS-ANCHOR MISMATCH'), `got: "${r4.out}" (exit ${r4.code})`);
-  check('forged head -> nonzero exit', r4.code === 1, `exit ${r4.code}`);
+  const { a, b } = buildOkPair();
+  const r = runCross(a, b);
+  check('(a) two-row both-directions non-genesis -> CROSS-ANCHOR OK',
+    r.out.startsWith('CROSS-ANCHOR OK'), `got: "${r.out}" (exit ${r.code})`);
+  check('(a) OK exits 0', r.code === 0, `exit ${r.code}`);
 }
 
-// --- Test 5 (NEGATIVE): rewrite A3's body so its head no longer matches A2's seal ---
-// Edit A3's init action and recompute A3's chain so it stays internally valid
-// (CHAIN OK) but its head differs from the head A2 sealed -> anchor mismatch.
+// --- Test 4 (WEAK): the CURRENT shipped genesis single-row case ---
+// Load the real shipped exports. A2 sealed A3 at genesis -> that direction binds
+// nothing -> WEAK overall. This is the honest result and MUST be exit 0.
 {
-  const A3_TID = 'a3'.repeat(20);
-  const A2_TID = 'a2'.repeat(20);
-  const a2Did = `did:t3n:${A2_TID}`;
-  const a3Did = `did:t3n:${A3_TID}`;
-  const { a2: a2good } = buildCrossPair();
-  // A3 with a DIFFERENT init action -> different pre-seal head than A2 sealed.
-  const a3Forged = buildExport(A3_TID, [
-    { seq: 0, ts: 1781371000, caller_did: a3Did, action: 'FORGED-init', outcome: 'allowed', masked_secret: 'sk_l…****…3333', reason: '' },
-    sealRow(1, A3_TID, a2Did, chainHead(a2good)),
+  const a2 = JSON.parse(readFileSync(join(HERE, 'export-a2.json'), 'utf8'));
+  const a3 = JSON.parse(readFileSync(join(HERE, 'export-a3.json'), 'utf8'));
+  const r = runCross(a2, a3);
+  check('(b) shipped genesis single-row -> CROSS-ANCHOR WEAK',
+    r.out.startsWith('CROSS-ANCHOR WEAK'), `got: "${r.out}" (exit ${r.code})`);
+  check('(b) WEAK names the genesis-anchored direction',
+    r.out.includes('genesis') && r.out.includes('no binding'), `got: "${r.out}"`);
+  check('(b) WEAK exits 0 (honest no-binding, not a failure)', r.code === 0, `exit ${r.code}`);
+}
+
+// --- Test 5 (MISMATCH): A seals a fabricated peer_head not present in B ---
+// Start from the OK pair; replace A's seal-of-B head with a hash that simply
+// does not exist anywhere in B's chain. Re-derive A's chain so A is internally
+// CHAIN OK (the lie is self-consistent inside A). Cross-anchor must catch it.
+{
+  const { b } = buildOkPair();
+  const FAKE_HEAD = 'd'.repeat(64); // non-genesis, not any row hash in B
+  const aForged = buildExport(A_TID, [
+    actRow(0, A_TID, 'init', 'sk_l…****…AAAA'),
+    sealRow(1, A_TID, bDid, FAKE_HEAD),
   ]);
-  const r5 = runCross(a2good, a3Forged);
-  // a2good still anchors the ORIGINAL a3 pre-seal head, which a3Forged no longer has.
-  check('forged A3 body -> CROSS-ANCHOR MISMATCH (head not anchored)', r5.out.startsWith('CROSS-ANCHOR MISMATCH'), `got: "${r5.out}" (exit ${r5.code})`);
+  // sanity: A alone still verifies (the fabrication is self-consistent)
+  const aAlone = runVerifier(aForged);
+  check('(c) fabricated-head A still verifies CHAIN OK in isolation',
+    aAlone.out.startsWith('CHAIN OK'), `got: "${aAlone.out}"`);
+  const r = runCross(aForged, b);
+  check('(c) fabricated peer_head not in peer chain -> CROSS-ANCHOR MISMATCH',
+    r.out.startsWith('CROSS-ANCHOR MISMATCH'), `got: "${r.out}" (exit ${r.code})`);
+  check('(c) MISMATCH exits 1', r.code === 1, `exit ${r.code}`);
+}
+
+// --- Test 6 (SHADOW ATTACK): honest seal + later forged/weaker seal ---
+// A holds an HONEST seal of B's real head, then APPENDS a second, later seal of
+// B naming a fabricated head (the attacker hopes the newer seal "shadows" the
+// honest one and weakens the binding). Because the verifier inspects ALL seals
+// (not just the newest), the fabricated later head is a non-existent peer head
+// -> MISMATCH. The honest binding is NOT silently weakened away.
+{
+  const { b, hBpre } = buildOkPair();
+  const FAKE_HEAD = 'e'.repeat(64);
+  const aShadow = buildExport(A_TID, [
+    actRow(0, A_TID, 'init', 'sk_l…****…AAAA'),
+    sealRow(1, A_TID, bDid, hBpre),     // honest seal of B's real head
+    sealRow(2, A_TID, bDid, FAKE_HEAD), // later forged/weaker seal
+  ]);
+  const aAlone = runVerifier(aShadow);
+  check('(d) shadow-attack A still verifies CHAIN OK in isolation',
+    aAlone.out.startsWith('CHAIN OK'), `got: "${aAlone.out}"`);
+  const r = runCross(aShadow, b);
+  check('(d) shadow attack (later forged seal) -> CROSS-ANCHOR MISMATCH (honest binding not shadowed)',
+    r.out.startsWith('CROSS-ANCHOR MISMATCH'), `got: "${r.out}" (exit ${r.code})`);
+  check('(d) shadow MISMATCH exits 1', r.code === 1, `exit ${r.code}`);
+}
+
+// Companion to (d): a NEWER seal at genesis must NOT weaken an existing honest
+// binding. The honest non-genesis seal still wins -> OK (binding unweakened).
+{
+  const { b, hBpre } = buildOkPair();
+  const aGenesisShadow = buildExport(A_TID, [
+    actRow(0, A_TID, 'init', 'sk_l…****…AAAA'),
+    sealRow(1, A_TID, bDid, hBpre),         // honest seal of B's real head
+    sealRow(2, A_TID, bDid, GENESIS_PREV),  // later genesis seal (binds nothing)
+  ]);
+  const r = runCross(aGenesisShadow, b);
+  check('(d2) later genesis seal does NOT weaken the honest binding -> still OK',
+    r.out.startsWith('CROSS-ANCHOR OK'), `got: "${r.out}" (exit ${r.code})`);
+}
+
+// --- Test 7 (POST-ANCHOR REWRITE): peer rewrites a row after being sealed ---
+// A honestly sealed B's real head (hBpre = B's row-0 hash). B then REWRITES its
+// row 0 and re-derives its own chain so B alone still verifies CHAIN OK — but
+// B's row-0 hash is now different, so the head A sealed no longer exists in B.
+// Cross-anchor must catch the post-anchor rewrite -> MISMATCH.
+{
+  const { a } = buildOkPair(); // A bound B's ORIGINAL row-0 hash
+  const bRewritten = buildExport(B_TID, [
+    actRow(0, B_TID, 'REWRITTEN-AFTER-SEAL', 'sk_l…****…BBBB'),
+    sealRow(1, B_TID, aDid, chainHead(a)),
+  ]);
+  const bAlone = runVerifier(bRewritten);
+  check('(e) post-rewrite B still verifies CHAIN OK in isolation (fooled itself)',
+    bAlone.out.startsWith('CHAIN OK'), `got: "${bAlone.out}"`);
+  const r = runCross(a, bRewritten);
+  check('(e) post-anchor rewrite of peer -> CROSS-ANCHOR MISMATCH',
+    r.out.startsWith('CROSS-ANCHOR MISMATCH'), `got: "${r.out}" (exit ${r.code})`);
+  check('(e) post-rewrite MISMATCH exits 1', r.code === 1, `exit ${r.code}`);
+}
+
+// --- Test 8 (MISMATCH): a BROKEN peer chain cannot be anchored against ---
+// If B's chain does not even verify in isolation, A's seal can only reference
+// fiction -> MISMATCH.
+{
+  const { a, b } = buildOkPair();
+  const bBroken = JSON.parse(JSON.stringify(b));
+  bBroken.rows[0].masked_secret = 'sk_l…****…XXXX'; // tamper without re-hashing
+  const bAlone = runVerifier(bBroken);
+  check('(f) tampered B is BROKEN in isolation',
+    bAlone.out.startsWith('BROKEN'), `got: "${bAlone.out}"`);
+  const r = runCross(a, bBroken);
+  check('(f) BROKEN peer chain -> CROSS-ANCHOR MISMATCH',
+    r.out.startsWith('CROSS-ANCHOR MISMATCH'), `got: "${r.out}" (exit ${r.code})`);
+  check('(f) BROKEN-peer MISMATCH exits 1', r.code === 1, `exit ${r.code}`);
 }
 
 if (failures === 0) {

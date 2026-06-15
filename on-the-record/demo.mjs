@@ -127,48 +127,98 @@ header('TAMPER-EVIDENT');
 }
 
 // =========================================================================
-// 3) NO SINGLE POINT OF FAILURE
+// 3) NO SINGLE POINT OF FAILURE  (provably-sound 3-state cross-anchor)
 // =========================================================================
 header('NO SINGLE POINT OF FAILURE');
 {
+  // ---- 3a) The REAL shipped exports, reported HONESTLY --------------------
+  // export-a2.json / export-a3.json are the genesis-anchored single-row pair we
+  // actually captured. A2 sealed A3 at GENESIS (binds nothing yet), while A3
+  // sealed A2's real head. The sound verifier therefore reports WEAK — not OK.
+  // WEAK is an honest "no cryptographic binding in this direction yet", exit 0.
   const a = load('export-a2.json');
   const b = load('export-a3.json');
   const cross = verifyCrossAnchor(a, b);
-  must(cross.ok, 'a2/a3 cross-anchor must verify');
-  line('verifier.mjs --cross export-a2.json export-a3.json:');
-  line(`  ->  CROSS-ANCHOR OK`);
-  line(`      A head ${short(cross.aHead)} sealed inside B`);
-  line(`      B head ${short(cross.bHead)} sealed inside A`);
+  must(cross.state === 'WEAK', 'shipped a2/a3 cross-anchor must be WEAK (genesis-anchored)');
+  line('verifier.mjs --cross export-a2.json export-a3.json  (the REAL shipped exports):');
+  line(`  ->  CROSS-ANCHOR WEAK: ${cross.reason}`);
+  line(`      A2 sealed A3 at GENESIS -> no binding that direction (honest, not OK)`);
+  line(`      A3 sealed A2 head ${short(cross.aHead)} -> a real binding that direction`);
+  line('  WEAK is reported truthfully: the shipped single-row pair does not yet');
+  line('  cross-bind both directions. It is NOT a forgery (so not MISMATCH) and');
+  line('  NOT a full mutual binding (so not OK).');
   line('');
 
-  // Tenant B rewrites its OWN single row, then recomputes its own hash so that
-  // B's chain STILL verifies CHAIN OK in isolation. In this shipped single-row
-  // fixture B's only row IS its seal-back to A, so rewriting it changes B's head
-  // AND destroys B's seal of A; either alone breaks the cross-anchor. Here the
-  // verifier reports it at the A->B check: A still anchors B at the head it
-  // sealed (genesis, since B was sealed at genesis), which the rewritten B no
-  // longer exposes as a real head -> CROSS-ANCHOR MISMATCH.
-  const bForged = JSON.parse(JSON.stringify(b));
-  const r0 = bForged.rows[0];
-  r0.action = 'REWRITTEN-HISTORY';
-  r0.hash = computeHash(bForged.salt, r0.prev_hash, r0); // self-consistent reseal
+  // ---- 3b) A judge re-deriving with proper two-row chains gets OK ----------
+  // Built locally from clearly-synthetic tenant IDs (NOT testnet). Each tenant
+  // appends a seal of the OTHER's real, non-genesis head -> both directions bind.
+  const T = (h) => Buffer.from(`on-the-record:v1:${h}`, 'utf8').toString('hex');
+  const A_TID = 'aa'.repeat(20), B_TID = 'bb'.repeat(20);
+  const aDid = `did:t3n:${A_TID}`, bDid = `did:t3n:${B_TID}`;
+  const mkRow = (salt, prev, partial) => {
+    const row = { ...partial, prev_hash: prev };
+    row.hash = computeHash(salt, prev, row);
+    return row;
+  };
+  const mkSeal = (seq, tid, peerDid, peerHead) => ({
+    seq, ts: 1781371000 + seq, caller_did: `did:t3n:${tid}`,
+    action: JSON.stringify({ type: 'seal', peer_did: peerDid, peer_head: peerHead }),
+    outcome: 'allowed', masked_secret: '', reason: '',
+  });
+  const mkInit = (seq, tid, secret) => ({
+    seq, ts: 1781371000 + seq, caller_did: `did:t3n:${tid}`,
+    action: 'init', outcome: 'allowed', masked_secret: secret, reason: '',
+  });
+  const Z = '0'.repeat(64);
 
-  const bAlone = verifyChain(bForged);
-  must(bAlone.ok, 'self-consistently forged B must still verify ALONE');
-  line('now tenant B rewrites its own row and re-seals its own hash:');
+  const saltA = T(A_TID), saltB = T(B_TID);
+  // B publishes init (its row-0 head is non-genesis).
+  const bInit = mkRow(saltB, Z, mkInit(0, B_TID, 'sk_l…****…BBBB'));
+  const hBpre = bInit.hash;
+  // A publishes init + seal(B, hBpre). A's head is non-genesis.
+  const aInit = mkRow(saltA, Z, mkInit(0, A_TID, 'sk_l…****…AAAA'));
+  const aSeal = mkRow(saltA, aInit.hash, mkSeal(1, A_TID, bDid, hBpre));
+  const synthA = { salt: saltA, salt_string: `on-the-record:v1:${A_TID}`, rows: [aInit, aSeal] };
+  const hA = aSeal.hash;
+  // B appends seal(A, hA). B's row-0 head hBpre still exists (B only appended).
+  const bSeal = mkRow(saltB, bInit.hash, mkSeal(1, B_TID, aDid, hA));
+  const synthB = { salt: saltB, salt_string: `on-the-record:v1:${B_TID}`, rows: [bInit, bSeal] };
+
+  const okCross = verifyCrossAnchor(synthA, synthB);
+  must(okCross.state === 'OK', 'synthetic two-row pair must cross-anchor OK');
+  line('a judge re-deriving with proper two-row chains (SYNTHETIC, locally built — not testnet):');
+  line(`  ->  CROSS-ANCHOR OK`);
+  line(`      A head ${short(okCross.aHead)} bound inside B (real, non-genesis)`);
+  line(`      B head ${short(okCross.bHead)} bound inside A (real, non-genesis)`);
+  line('');
+
+  // ---- 3c) A post-anchor rewrite is caught -> MISMATCH --------------------
+  // B rewrites its row-0 AFTER A sealed it, then re-derives so B alone still
+  // verifies CHAIN OK. But the head A sealed (hBpre) no longer exists in B.
+  const bRwInit = mkRow(saltB, Z, mkInit(0, B_TID, 'sk_l…****…BBBB'));
+  bRwInit.action = 'REWRITTEN-AFTER-SEAL';
+  bRwInit.hash = computeHash(saltB, Z, bRwInit); // self-consistent re-seal
+  const bRwSeal = mkRow(saltB, bRwInit.hash, mkSeal(1, B_TID, aDid, hA));
+  const synthBrw = { salt: saltB, salt_string: `on-the-record:v1:${B_TID}`, rows: [bRwInit, bRwSeal] };
+
+  const bAlone = verifyChain(synthBrw);
+  must(bAlone.ok, 'self-consistently rewritten B must still verify ALONE');
+  line('now tenant B rewrites its own row AFTER being sealed, and re-seals its own hash:');
   line(`  B verified IN ISOLATION   ->  CHAIN OK ${bAlone.n} rows   (B fooled itself)`);
 
-  const crossForged = verifyCrossAnchor(a, bForged);
-  must(!crossForged.ok, 'forged-B cross-anchor must MISMATCH');
+  const mismatch = verifyCrossAnchor(synthA, synthBrw);
+  must(mismatch.state === 'MISMATCH', 'post-anchor rewrite must MISMATCH');
   line(`  cross-anchor against A    ->  CROSS-ANCHOR MISMATCH`);
-  line(`      ${crossForged.reason}`);
+  line(`      ${mismatch.reason}`);
   line('');
   line('  A self-consistent rewrite passes B\'s OWN verifier — but A holds an');
-  line('  independent seal of B, and the rewrite no longer matches it. To make the');
-  line('  forgery stick, B would also have to rewrite A\'s independently-held chain.');
-  line('  One tenant cannot rewrite the cross-anchored prefix of its history alone.');
-  line('  (Shown here with two accounts we control: this is the mechanism;');
-  line('  full independence is when third parties run the anchors.)');
+  line('  independent seal of B\'s real head, and the rewrite no longer matches it.');
+  line('  To make the forgery stick, B would also have to rewrite A\'s independently');
+  line('  held chain. One tenant cannot rewrite cross-anchored history alone.');
+  line('  All three states are shown above: WEAK (shipped, honest no-binding-yet),');
+  line('  OK (real mutual binding), MISMATCH (any forged/rewritten peer head).');
+  line('  (Shown with accounts we control: this is the mechanism; full independence');
+  line('  is when third parties run the anchors.)');
 }
 
 // =========================================================================
