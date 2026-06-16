@@ -1,0 +1,30 @@
+<!doctype html><meta charset=utf-8><style>
+*{margin:0;box-sizing:border-box}html,body{width:1280px;height:720px}
+.s{width:1280px;height:720px;background:radial-gradient(130% 130% at 26% 16%,#15294a,#0a0f1c 58%,#070b14);
+font-family:'Inter','Helvetica Neue',Arial,sans-serif;color:#e8eef7;position:relative;padding:64px 72px;overflow:hidden}
+.spine{position:absolute;left:0;top:0;bottom:0;width:12px;background:#2ee6a6;box-shadow:0 0 26px rgba(46,230,166,.5)}
+.eyebrow{display:flex;justify-content:space-between;font-family:ui-monospace,monospace;font-size:20px;letter-spacing:3px;color:#7f93a8;text-transform:uppercase}
+.wm{margin-top:26px;font-weight:800;font-size:74px;letter-spacing:1px;line-height:1}
+.wm .g{color:#2ee6a6}
+.tag{margin-top:14px;font-weight:300;font-size:27px;color:#aebccd;max-width:880px;line-height:1.32}
+.card{margin-top:30px;background:rgba(8,14,26,.72);border:1px solid rgba(46,230,166,.32);border-radius:16px;padding:22px 26px;font-family:ui-monospace,Menlo,monospace;font-size:23px;line-height:1.7;max-width:1040px;box-shadow:0 10px 40px rgba(0,0,0,.4)}
+.row{display:flex;gap:18px;align-items:center}
+.k{color:#5f7governs;color:#64778c}
+.al{color:#2ee6a6;font-weight:700} .dn{color:#ff6b6b;font-weight:700}
+.h{color:#8aa0b6} .arrow{color:#64778c}
+.stamp{display:inline-block;margin-top:14px;color:#2ee6a6;border:1.5px solid #2ee6a6;border-radius:8px;padding:5px 14px;font-size:20px;font-weight:700;letter-spacing:1px;box-shadow:0 0 18px rgba(46,230,166,.25)}
+.foot{position:absolute;left:72px;bottom:46px;font-family:ui-monospace,monospace;font-size:21px;color:#7f93a8}
+.foot b{color:#2ee6a6}
+</style>
+<div class=s><div class=spine></div>
+<div class=eyebrow><span>ON&nbsp;THE&nbsp;RECORD</span><span>THE&nbsp;RECEIPT&nbsp;RUNTIME</span></div>
+<div class=wm>every agent action<br>is a <span class=g>receipt</span></div>
+<div class=tag>acting and proving are one transaction — tamper-evident, cross-anchored, and yours to verify</div>
+<div class=card>
+  <div class=row><span class=k>seq 29263</span><span class=al>ALLOWED</span><span class=h>transfer:invoice-7782</span></div>
+  <div class=row><span class=k>seq 29270</span><span class=dn>DENIED</span><span class=h>reason: no_active_grant</span></div>
+  <div class=row><span class=k>prev_hash</span><span class=h>7ab05ec0…</span><span class=arrow>→</span><span class=k>hash</span><span class=h>22eef927…</span></div>
+  <div class=stamp>CHAIN OK · CROSS-ANCHOR OK</div>
+</div>
+<div class=foot>reproduce every claim offline in 30s — <b>node on-the-record/demo.mjs</b> · no network · no credits</div>
+</div>

@@ -4,7 +4,7 @@ Submit at: **https://dorahacks.io/hackathon/t3adkdevchallenge** → **Submit BUI
 (Log in first — your session is saved in `~/.creds-profile`.) Deadline **2026-06-22 23:59 GMT+8**; target submit **Jun 21**.
 
 ## ✅ Pre-flight (do these 2 first)
-1. **Video link.** DoraHacks wants a URL, not a file. Upload `on-the-record/filmstrip-demo.mp4` to YouTube **(Unlisted)** and paste the link below. (Optional but recommended — the entry is *also* live/reproducible, so the video is supporting, not sole.)
+1. **Video link.** DoraHacks wants a URL, not a file. Upload **`on-the-record/demo-narrated.mp4`** (102s, 1080p, full narrated walkthrough — voiceover + branded slides with the real on-chain results) to YouTube **(Unlisted)** and paste the link below. (`filmstrip-demo.mp4` is a shorter silent alt if you prefer.)
 2. **Repo is public** ✅ already: https://github.com/Alexander-Sorrell-IT/on-the-record
 
 ---
@@ -78,7 +78,28 @@ finding). Provenance disclosed: forked from our earlier mesh-seller contract.
 3. Paste the video link. Select Track 1. Add tags.
 4. Review → **Submit**. You can edit after submitting, so submitting early (then refining) is safe.
 
+## Confirmed DoraHacks BUIDL form fields (from their guide; finalize against the live form)
+Entry point: **dorahacks.io/buidl → Submit BUIDL**. Fields, in order:
+| Field | Our value | Required |
+|---|---|---|
+| Name | On the Record — the receipt runtime for AI agents | ✔ |
+| Logo / cover image | **logo.png** (square emblem) · **cover.png** (1280×720 receipt-card cover, doubles as YouTube thumbnail) | ✔ |
+| Intro / tagline | (the one-liner above) | ✔ |
+| Full description | **DORAHACKS-FIELDS.md** (Inspiration / What it does / How we built it / Challenges / Learned / What's next — proven judge-friendly structure) | ✔ |
+| Demo video | YouTube (Unlisted) link of **demo-narrated.mp4** (narrated, 102s) | ✔ (link, not upload) |
+| Tech stack / tags | Rust, WASM, TypeScript, Ethereum, MCP / ai, security, identity… | ✔ |
+| GitHub / source | https://github.com/Alexander-Sorrell-IT/on-the-record | ✔ |
+| Demo / website link | repo (use `node on-the-record/demo.mjs`); include http(s):// | optional |
+| Social links | (optional) | optional |
+| Team members | solo (add none) | — |
+| Hackathon + track | Terminal 3 ADK Bounty → **Track 1** | ✔ |
+
+After submit: status = **"In review"**, editable anytime in *Account → My BUIDLs* (so submit early, refine later).
+This hackathon mandates **no video length** (judged completeness/SDK-depth/creativity) — ~3 min is fine.
+
 ## What still needs YOU
+- A **logo/cover image** — I can generate a clean one now; say the word.
 - The **YouTube link** for the video (your account).
-- The **final Submit click** (your DoraHacks account).
-Everything else is ready.
+- **Pass the DoraHacks human-check** + the **final Submit click** (your account).
+- The **exact live form** I'll capture from the open window once you're signed in — then I fill it.
+Everything else is ready and paste-ready above.

@@ -11,7 +11,7 @@ _Loosely modeled on an EU AI Act Article 12 (record-keeping) logging extract plu
 | Receipt rows in filing | 2 |
 | Verification status | CHAIN OK (2 rows, recomputed client-side) |
 | Generated from | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export.json` |
-| Generated at (UTC) | 2026-06-13T17:42:44.713Z |
+| Generated at (UTC) | 2026-06-16T22:20:53.690Z |
 
 > Evidence model: each row's `hash = SHA256( salt || prev_hash_bytes || canonical_json(row\ hash) )`. Each entry below CITES its own evidence hash and its `prev_hash` link to the prior row, so every line is independently traceable along the salted hash-chain back to genesis (`prev_hash = 0000000000000000000000000000000000000000000000000000000000000000`).
 

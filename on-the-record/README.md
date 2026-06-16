@@ -146,7 +146,7 @@ node on-the-record/verifier.mjs --cross on-the-record/export-a2.json on-the-reco
 node on-the-record/verifier.mjs on-the-record/export.json
 #    -> BROKEN AT seq=<the row you touched>
 
-# 4) The verifier's own test suite (8 checks: 3 positive + 2 negative + structure):
+# 4) The verifier's own test suite (24 checks: chains, byte-flip tamper, cross-anchor OK/WEAK/MISMATCH, + forgery/shadow-seal/rewrite/broken-peer negatives):
 node on-the-record/verifier.test.mjs
 #    -> ALL TESTS PASSED
 ```
@@ -300,7 +300,7 @@ offline verifier, dual-tenant cross-anchor) are disclosed in full, up front, in
 | File | What it is |
 |---|---|
 | [`verifier.mjs`](verifier.mjs) | Offline verifier. Pure Node, zero SDK, zero network. |
-| [`verifier.test.mjs`](verifier.test.mjs) | 8 checks: positive chain, byte-flip, cross-anchor positive + 2 negatives. |
+| [`verifier.test.mjs`](verifier.test.mjs) | 24 checks: chains, byte-flip tamper, cross-anchor OK/WEAK/MISMATCH, + adversarial forgery/shadow-seal/rewrite/broken-peer negatives. |
 | [`export.json`](export.json) | Refusal chain: ALLOWED (seq 29263) + DENIED-after-revoke (seq 29270). |
 | [`export-a2.json`](export-a2.json) | Cross-anchor tenant A (Account 2, 2 rows; head seq 35984 seals A3's real head). |
 | [`export-a3.json`](export-a3.json) | Cross-anchor tenant B (Account 3, seal seq 29406 seals A2's real head). |

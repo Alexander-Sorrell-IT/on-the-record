@@ -1,0 +1,21 @@
+<!doctype html><html><head><meta charset="utf-8"><style>
+*{margin:0;box-sizing:border-box}
+html,body{width:512px;height:512px}
+.tile{width:512px;height:512px;background:radial-gradient(120% 120% at 30% 20%,#10203a 0%,#0a0f1c 60%,#070b14 100%);
+display:flex;flex-direction:column;align-items:center;justify-content:center;font-family:'Inter','Helvetica Neue',Arial,sans-serif;color:#e8eef7}
+.seal{width:150px;height:150px;margin-bottom:34px;position:relative;display:flex;align-items:center;justify-content:center}
+.ring{position:absolute;inset:0;border:7px solid #2ee6a6;border-radius:30px;transform:rotate(45deg);box-shadow:0 0 28px rgba(46,230,166,.35)}
+.lines{position:relative;display:flex;flex-direction:column;gap:13px}
+.lines i{display:block;height:9px;border-radius:5px;background:#2ee6a6}
+.lines i:nth-child(1){width:62px}.lines i:nth-child(2){width:78px}.lines i:nth-child(3){width:46px}
+.wm{font-weight:800;font-size:62px;letter-spacing:2px;line-height:.98;text-align:center}
+.wm .thin{font-weight:300;color:#9fb3c8;display:block;font-size:30px;letter-spacing:9px;margin-bottom:6px}
+.rule{width:150px;height:3px;background:#2ee6a6;margin:20px 0 14px;border-radius:2px;opacity:.85}
+.sub{font-family:'SFMono-Regular',ui-monospace,Menlo,monospace;font-size:18px;letter-spacing:6px;color:#7f93a8;text-transform:uppercase}
+</style></head><body>
+<div class="tile">
+  <div class="seal"><div class="ring"></div><div class="lines"><i></i><i></i><i></i></div></div>
+  <div class="wm"><span class="thin">ON&nbsp;THE</span>RECORD</div>
+  <div class="rule"></div>
+  <div class="sub">receipt&nbsp;runtime</div>
+</div></body></html>

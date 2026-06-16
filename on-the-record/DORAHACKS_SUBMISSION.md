@@ -100,14 +100,14 @@ node on-the-record/verifier.mjs --cross on-the-record/export-a2.json on-the-reco
 # 3) Tamper test — flip one byte in any row of export.json (don't recompute its hash), re-run #1:
 #    -> BROKEN AT seq=<the row you touched>
 
-# 4) The verifier's own suite (8 checks: 3 positive + 2 negative + structure):
+# 4) The verifier's own suite (24 checks: chains, tamper, cross-anchor OK/WEAK/MISMATCH, + adversarial forgery/shadow/rewrite/broken-peer):
 node on-the-record/verifier.test.mjs
 #    -> ALL TESTS PASSED
 ```
 
 And open **`on-the-record/filmstrip.html`** in a browser: an interactive integrity toy that recomputes the chain hashes live in-page — drag a byte and watch the chain break. Its crypto matches the CLI verifier exactly.
 
-All four CLI commands above were run for this submission: `demo.mjs` exits 0, `CHAIN OK 2 rows`, `CROSS-ANCHOR OK`, `8/8`.
+All four CLI commands above were run for this submission: `demo.mjs` exits 0, `CHAIN OK 2 rows`, `CROSS-ANCHOR OK`, `24/24`.
 
 ---
 
