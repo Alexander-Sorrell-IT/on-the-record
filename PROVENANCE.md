@@ -72,11 +72,25 @@ None of the following existed in `mesh-seller`. These are the contributions of
   already-proven client `executeAndDecode` transport. Forging history therefore
   requires corrupting two separately-claimed tenants, not one. `mesh-seller` was
   single-tenant and had no cross-anchor.
+- **Keyless agent via an MCP custody proxy.** A real MCP stdio server holds the
+  key in a closure and exposes only `act / head / verify / file`; the agent
+  process holds no key and reaches the chain only through recorded verbs.
+  `mesh-seller` had no MCP surface and no key-custody boundary.
+- **Client-side regulator filing.** `render-filing.mjs` re-verifies the chain
+  and renders an audit/regulator filing where every line cites its evidence
+  hash. No equivalent existed in the prior work.
+- **Delegation / authority (a second crypto surface).** A signed delegation
+  credential (RFC-8785 JCS + EIP-191 user signature + secp256k1 agent
+  invocation) is committed on-chain and an out-of-mandate action is refused and
+  recorded; re-verifiable offline. `mesh-seller` had only the in-Rust spend-cap
+  check — no credential, no second crypto primitive, no signer recovery.
 
 ## Summary
 
 Inherited: the in-enclave governance chassis (caller DID, host seq/timestamp,
 namespaced `kv_store`, secret masking, audit-write / get-audit). New: the
-salted hash-chain, the generalized `record-action`, the offline verifier, and
-the dual-tenant cross-anchor — i.e., the receipt-runtime category itself. We
-disclose the shared chassis here deliberately and in full.
+salted hash-chain, the generalized `record-action`, the offline verifier, the
+dual-tenant cross-anchor, the keyless MCP custody proxy, the client-side
+regulator filing, and the delegation/authority second crypto surface — i.e.,
+the receipt-runtime category itself, not the agent-commerce demo the beta was.
+We disclose the shared chassis here deliberately and in full.
