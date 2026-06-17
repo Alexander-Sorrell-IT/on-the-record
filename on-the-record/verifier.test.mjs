@@ -19,7 +19,7 @@ import { tmpdir } from 'node:os';
 import { join, dirname } from 'node:path';
 import { execFileSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
-import { computeHash, chainHead } from './verifier.mjs';
+import { computeHash, chainHead, verifyAuthority, parseAuthority } from './verifier.mjs';
 
 const VERIFIER = fileURLToPath(new URL('./verifier.mjs', import.meta.url));
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -83,6 +83,24 @@ function runCross(exportA, exportB) {
   return { out: out.trim(), code };
 }
 
+// Run the verifier in --authority mode (zero-dep mandate-logic check) over an export.
+function runAuthority(exportObj) {
+  const dir = mkdtempSync(join(tmpdir(), 'otr-auth-'));
+  const file = join(dir, 'export.json');
+  writeFileSync(file, JSON.stringify(exportObj));
+  let out;
+  let code = 0;
+  try {
+    out = execFileSync('node', [VERIFIER, '--authority', file], { encoding: 'utf8' });
+  } catch (e) {
+    out = e.stdout != null ? e.stdout : '';
+    code = e.status;
+  } finally {
+    rmSync(dir, { recursive: true, force: true });
+  }
+  return { out: out.trim(), code };
+}
+
 // Build a chain row-by-row from a list of partial rows (no prev_hash/hash),
 // computing each hash the way the verifier does. Returns the export object.
 function buildExport(tidHex, partials) {
@@ -111,6 +129,17 @@ function sealRow(seq, tidHex, peerDid, peerHead) {
     seq, ts: 1781371000 + seq, caller_did: `did:t3n:${tidHex}`,
     action: JSON.stringify({ type: 'seal', peer_did: peerDid, peer_head: peerHead }),
     outcome: 'allowed', masked_secret: '', reason: '',
+  };
+}
+
+// An AUTHORITY-mandate row. `action` carries the terse on-chain authority blob
+// {t,fn,amt,cap,fns,c} the verifier's parseAuthority reads (NOT crypto — that
+// lives in authority-verify.mjs; this is the zero-dep mandate-logic shape only).
+function authorityRow(seq, tidHex, { fn, amt, cap, fns, outcome }) {
+  return {
+    seq, ts: 1781371000 + seq, caller_did: `did:t3n:${tidHex}`,
+    action: JSON.stringify({ t: 'authority', fn, amt, cap, fns, c: '9d35c3a97303f063401eb048978b6a8d' }),
+    outcome, masked_secret: outcome === 'allowed' ? 'sk_l…****…AUTH' : '', reason: outcome === 'denied' ? 'no_active_grant' : '',
   };
 }
 
@@ -312,6 +341,100 @@ check('tampered chain prints BROKEN AT seq=1', r2.out === 'BROKEN AT seq=1', `go
   check('(f) BROKEN peer chain -> CROSS-ANCHOR MISMATCH',
     r.out.startsWith('CROSS-ANCHOR MISMATCH'), `got: "${r.out}" (exit ${r.code})`);
   check('(f) BROKEN-peer MISMATCH exits 1', r.code === 1, `exit ${r.code}`);
+}
+
+// =========================================================================
+// PART C — AUTHORITY / delegation mandate-logic (zero-dep; crypto is separate)
+// =========================================================================
+// The core verifier carries a ZERO-DEPENDENCY mandate-logic check:
+//   in_mandate  <=>  fn IN functions[]  AND  amount_cents <= cap_cents
+// and the HARD soundness invariant: an OUT-of-mandate action must NOT be
+// recorded as `allowed`. (Cryptographic re-verification of the delegation
+// credential — EIP-191 user sig + agent invocation sig + commitment — lives in
+// the SEPARATE authority-verify.mjs, which uses the SDK's own offline crypto;
+// that surface is exercised by its own run, not here.)
+
+const FNS = ['compute-payroll', 'execute-disbursement'];
+
+// --- Test 9 (in-mandate ALLOW is consistent): fn in set, amount <= cap ---
+{
+  const exp = buildExport(A_TID, [
+    authorityRow(0, A_TID, { fn: 'execute-disbursement', amt: 420000, cap: 1500000, fns: FNS, outcome: 'allowed' }),
+  ]);
+  const va = verifyAuthority(exp);
+  const row = va.rows.find((r) => r.seq === 0);
+  check('(g) in-mandate act is IN-MANDATE + consistent',
+    row && row.in_mandate === true && row.consistent === true, JSON.stringify(row));
+  check('(g) in-mandate-only export -> verifyAuthority ok', va.ok === true, JSON.stringify(va.flagged));
+  const r = runAuthority(exp);
+  check('(g) --authority CLI: in-mandate ALLOWED -> AUTHORITY OK, exit 0',
+    r.out.includes('IN-MANDATE') && r.out.includes('AUTHORITY OK') && r.code === 0, `got: "${r.out}" (exit ${r.code})`);
+}
+
+// --- Test 10 (out-of-mandate DENIED is consistent): amount > cap, refused ---
+{
+  const exp = buildExport(A_TID, [
+    authorityRow(0, A_TID, { fn: 'execute-disbursement', amt: 2500000, cap: 1500000, fns: FNS, outcome: 'denied' }),
+  ]);
+  const va = verifyAuthority(exp);
+  const row = va.rows.find((r) => r.seq === 0);
+  check('(h) over-cap act is OUT-OF-MANDATE; DENIED keeps it consistent',
+    row && row.in_mandate === false && row.outcome === 'denied' && row.consistent === true, JSON.stringify(row));
+  check('(h) out-of-mandate-but-denied export -> verifyAuthority ok', va.ok === true, JSON.stringify(va.flagged));
+}
+
+// --- Test 11 (HARD soundness): out-of-mandate recorded as ALLOWED is flagged ---
+// This is the invariant that matters: an action OUTSIDE the mandate must never
+// be recorded allowed. If it is, the verifier must flag it and the CLI must fail.
+{
+  const exp = buildExport(A_TID, [
+    authorityRow(0, A_TID, { fn: 'execute-disbursement', amt: 2500000, cap: 1500000, fns: FNS, outcome: 'allowed' }),
+  ]);
+  const va = verifyAuthority(exp);
+  check('(i) out-of-mandate ALLOWED is flagged inconsistent (the escape is caught)',
+    va.ok === false && va.flagged.length === 1 && va.flagged[0].seq === 0, JSON.stringify(va));
+  const r = runAuthority(exp);
+  check('(i) --authority CLI: out-of-mandate ALLOW -> AUTHORITY VIOLATION, exit 1',
+    r.out.includes('AUTHORITY VIOLATION') && r.code === 1, `got: "${r.out}" (exit ${r.code})`);
+}
+
+// --- Test 12 (out-of-set fn): fn NOT in functions[] is out-of-mandate ---
+{
+  const exp = buildExport(A_TID, [
+    authorityRow(0, A_TID, { fn: 'wire-to-self', amt: 1, cap: 1500000, fns: FNS, outcome: 'allowed' }),
+  ]);
+  const row = verifyAuthority(exp).rows.find((r) => r.seq === 0);
+  check('(j) fn outside functions[] -> within_cap but NOT in_mandate (and flagged when allowed)',
+    row && row.within_cap === true && row.in_functions === false && row.in_mandate === false && row.consistent === false,
+    JSON.stringify(row));
+}
+
+// --- Test 13 (parseAuthority is narrow): non-authority rows are ignored ---
+// parseAuthority must return null for ordinary act/seal rows and only match the
+// terse {t:"authority",...} shape, so verifyAuthority never mislabels a plain act.
+{
+  check('(k) parseAuthority(plain act) === null',
+    parseAuthority(actRow(0, A_TID, 'load-policy', 'sk_****')) === null);
+  check('(k) parseAuthority(seal row) === null',
+    parseAuthority(sealRow(0, A_TID, bDid, GENESIS_PREV)) === null);
+  const exp = buildExport(A_TID, [
+    actRow(0, A_TID, 'load-policy', 'sk_****'),
+    authorityRow(1, A_TID, { fn: 'execute-disbursement', amt: 420000, cap: 1500000, fns: FNS, outcome: 'allowed' }),
+  ]);
+  check('(k) verifyAuthority counts only the authority row, ignoring the plain act',
+    verifyAuthority(exp).rows.length === 1, JSON.stringify(verifyAuthority(exp).rows));
+}
+
+// --- Test 14 (shipped export-authority.json): real captured rows verify ---
+// The REAL shipped authority export: in-mandate ALLOWED (seq 40448) +
+// out-of-mandate DENIED (seq 40455). Both consistent; chain + mandate-logic OK.
+{
+  const exp = JSON.parse(readFileSync(join(HERE, 'export-authority.json'), 'utf8'));
+  const r = runAuthority(exp);
+  check('(l) shipped export-authority.json -> AUTHORITY OK (2 rows), exit 0',
+    r.out.includes('seq=40448') && r.out.includes('IN-MANDATE') &&
+    r.out.includes('seq=40455') && r.out.includes('OUT-OF-MANDATE') &&
+    r.out.includes('AUTHORITY OK') && r.code === 0, `got: "${r.out}" (exit ${r.code})`);
 }
 
 if (failures === 0) {

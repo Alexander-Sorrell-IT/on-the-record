@@ -259,10 +259,10 @@ repo root (`on-the-record/`). These are the literal strings to capture:
 
 | # | Command | Output (verbatim) |
 |---|---|---|
-| 0 | **`node demo.mjs`** (the primary on-screen action) | five narrated sections (`1) ACT + EVIDENCE…` … `5) THE FILING`), then the closing card; **exits 0** |
+| 0 | **`node demo.mjs`** (the primary on-screen action) | six narrated sections (`1) ACT + EVIDENCE…` … `5) AUTHORITY…` … `6) THE FILING`), then the closing card; **exits 0** |
 | 1 | `node verifier.mjs export.json` | `CHAIN OK 2 rows` |
 | 2 | (flip one byte, no rehash) `node verifier.mjs export.json` | `BROKEN AT seq=<the row you touched>` (e.g. `BROKEN AT seq=29270`; `demo.mjs` flips seq 29263 in-memory and prints `BROKEN AT seq=29263`) |
-| 3 | `node verifier.test.mjs` | `ALL TESTS PASSED` (24 checks incl. adversarial forgery/shadow/rewrite) |
+| 3 | `node verifier.test.mjs` | `ALL TESTS PASSED` (36 checks incl. adversarial forgery/shadow/rewrite + authority mandate-logic) |
 | 4 | `node verifier.mjs --cross export-a2.json export-a3.json` | `CROSS-ANCHOR OK (A head=4e9e…0619 bound in B; B head=c4ac…8411 bound in A)` |
 | 5 | `node verifier.mjs export-agent.json` | `CHAIN OK 5 rows` |
 | 6 | `node render-filing.mjs export.json filing.md` | `FILING RENDERED -> …/filing.md` |

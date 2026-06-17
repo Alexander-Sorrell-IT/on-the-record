@@ -16,6 +16,7 @@ import {
   verifyCrossAnchor,
   chainHead,
   computeHash,
+  verifyAuthority,
 } from './verifier.mjs';
 import { renderFiling } from './render-filing.mjs';
 
@@ -276,7 +277,74 @@ header('THE AGENT HOLDS NO KEYS');
 }
 
 // =========================================================================
-// 5) THE FILING
+// 5) AUTHORITY — THE AGENT ACTS ONLY INSIDE A RECORDED MANDATE
+// =========================================================================
+header('AUTHORITY — IN-MANDATE ALLOWED, OUT-OF-MANDATE REFUSED, MANDATE ON-CHAIN');
+{
+  const exp = load('export-authority.json');
+  const res = verifyChain(exp);
+  must(res.ok, 'export-authority.json must verify CHAIN OK');
+  line(`verifier.mjs export-authority.json  ->  CHAIN OK ${res.n} rows`);
+  line('');
+
+  // Zero-dep mandate-logic over the on-chain rows:
+  //   in_mandate <=> fn IN functions[] AND amount_cents <= cap_cents
+  // and the HARD soundness invariant: no OUT-of-mandate row may be `allowed`.
+  const va = verifyAuthority(exp);
+  must(va.ok, 'no out-of-mandate row may be recorded allowed (soundness invariant)');
+  must(va.rows.length === 2, `expected exactly 2 authority rows, got ${va.rows.length}`);
+
+  const inM = va.rows.find((r) => r.seq === 40448);
+  const outM = va.rows.find((r) => r.seq === 40455);
+  must(
+    inM && inM.in_mandate === true && inM.outcome === 'allowed',
+    'seq 40448 must be IN-MANDATE and allowed',
+  );
+  must(
+    outM && outM.in_mandate === false && outM.outcome === 'denied',
+    'seq 40455 must be OUT-OF-MANDATE and denied',
+  );
+
+  line('IN-MANDATE act (fn in the granted set, amount within the cap):');
+  line(`  seq        ${inM.seq}`);
+  line(`  fn         ${inM.fn}`);
+  line(`  amount     ${inM.amount_cents}  (cap ${inM.cap_cents})  -> within cap, fn granted`);
+  line(`  outcome    ${inM.outcome}`);
+  line('');
+  line('OUT-OF-MANDATE act (same fn, but amount EXCEEDS the cap):');
+  line(`  seq        ${outM.seq}`);
+  line(`  fn         ${outM.fn}`);
+  line(`  amount     ${outM.amount_cents}  (cap ${outM.cap_cents})  -> over cap -> OUT-OF-MANDATE`);
+  line(`  outcome    ${outM.outcome}  (refused)`);
+  line('');
+
+  // The mandate itself is recorded on-chain: every authority row carries the
+  // 16-byte credential commitment `c`, and it equals the commitment the
+  // delegation credential hashes to. Prove the rows commit to the SAME mandate.
+  const commit = exp.authority.commit;
+  const rowCommits = exp.rows
+    .map((r) => { try { return JSON.parse(r.action); } catch { return null; } })
+    .filter((a) => a && a.t === 'authority')
+    .map((a) => a.c);
+  must(rowCommits.length === 2, 'both authority rows must carry a commitment');
+  must(
+    rowCommits.every((c) => c === commit),
+    'both authority rows must commit to the same on-chain mandate',
+  );
+  line(`mandate commitment recorded on-chain: c=${commit}`);
+  line(`  ^ both authority rows carry this 16-byte commitment to the delegation`);
+  line('    credential (granted functions + cap). The mandate is not a side note —');
+  line('    it is bound INTO the same hash-chained rows as the acts it governs.');
+  line('');
+  line('  An in-mandate act was ALLOWED; an out-of-mandate act was REFUSED; and the');
+  line('  mandate they were judged against is itself on the record. (The credential\'s');
+  line('  EIP-191 user signature + the agent invocation signature re-verify with the');
+  line('  SDK\'s own offline crypto in the SEPARATE authority-verify.mjs; this beat is');
+  line('  the zero-dependency mandate-logic check, kept SDK-free like the rest of the demo.)');
+}
+
+// =========================================================================
+// 6) THE FILING
 // =========================================================================
 header('THE FILING');
 {

@@ -41,7 +41,7 @@ Row shape: `{ seq, ts, caller_did, action, outcome('allowed'|'denied'), masked_s
 | Item | Path |
 |---|---|
 | Verifier | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/verifier.mjs` |
-| Verifier tests (24/24) | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/verifier.test.mjs` |
+| Verifier tests (36/36) | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/verifier.test.mjs` |
 | Filing renderer | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/render-filing.mjs` |
 | Rendered filing (output) | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/filing.md` |
 
@@ -107,7 +107,7 @@ node "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/ver
      "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export-a2.json" \
      "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export-a3.json"
 
-# (c) verifier self-tests (24 checks incl. adversarial forgery/shadow/rewrite/broken-peer)  -> ALL TESTS PASSED
+# (c) verifier self-tests (36 checks incl. adversarial forgery/shadow/rewrite/broken-peer + authority mandate-logic)  -> ALL TESTS PASSED
 node "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/verifier.test.mjs"
 
 # (d) render the regulator/audit filing over the verified chain  -> FILING RENDERED
@@ -140,8 +140,9 @@ hash) and re-run (a) — the verifier reports `BROKEN AT seq=<row>`.
   proves the mechanism; full independence is when third parties run the anchors —
   see "Stated honest limit".)
 - **Offline verification.** `verifier.mjs` recomputes every hash from the public
-  salt with built-in SHA-256 only; 24/24 self-tests pass, including adversarial negative
-  cross-anchor cases (forged head, rewritten body).
+  salt with built-in SHA-256 only; 36/36 self-tests pass, including adversarial negative
+  cross-anchor cases (forged head, rewritten body) and authority mandate-logic
+  (in-mandate allow, out-of-mandate deny, out-of-mandate-ALLOW soundness escape).
 - **Client-side filing.** `render-filing.mjs` re-verifies the chain and refuses
   to render if broken; `filing.md` cites each row's evidence hash + prev_hash
   link (EU AI Act Art. 12-style record-keeping extract).

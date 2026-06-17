@@ -15,7 +15,9 @@ every claim below points at a real artifact you can open, re-run, or break.
 
 Most "audit logs" are written *after* the fact by the same component that took
 the action — so a component that misbehaves can also rewrite its own story.
-"On the Record" removes that gap.
+"On the Record" removes that gap. **Guardrails decide THEN log — that is a gap;
+On the Record makes the decision and its evidence the SAME atomic write — no
+gap.**
 
 A caller invokes a single governed verb, `record-action`. Inside the enclave,
 in one transaction, the contract:
@@ -146,7 +148,7 @@ node on-the-record/verifier.mjs --cross on-the-record/export-a2.json on-the-reco
 node on-the-record/verifier.mjs on-the-record/export.json
 #    -> BROKEN AT seq=<the row you touched>
 
-# 4) The verifier's own test suite (24 checks: chains, byte-flip tamper, cross-anchor OK/WEAK/MISMATCH, + forgery/shadow-seal/rewrite/broken-peer negatives):
+# 4) The verifier's own test suite (36 checks: chains, byte-flip tamper, cross-anchor OK/WEAK/MISMATCH, forgery/shadow-seal/rewrite/broken-peer negatives, + authority in-mandate/out-of-mandate/soundness-escape):
 node on-the-record/verifier.test.mjs
 #    -> ALL TESTS PASSED
 ```
@@ -300,7 +302,7 @@ offline verifier, dual-tenant cross-anchor) are disclosed in full, up front, in
 | File | What it is |
 |---|---|
 | [`verifier.mjs`](verifier.mjs) | Offline verifier. Pure Node, zero SDK, zero network. |
-| [`verifier.test.mjs`](verifier.test.mjs) | 24 checks: chains, byte-flip tamper, cross-anchor OK/WEAK/MISMATCH, + adversarial forgery/shadow-seal/rewrite/broken-peer negatives. |
+| [`verifier.test.mjs`](verifier.test.mjs) | 36 checks: chains, byte-flip tamper, cross-anchor OK/WEAK/MISMATCH, adversarial forgery/shadow-seal/rewrite/broken-peer negatives, + authority in-mandate/out-of-mandate/soundness-escape. |
 | [`export.json`](export.json) | Refusal chain: ALLOWED (seq 29263) + DENIED-after-revoke (seq 29270). |
 | [`export-a2.json`](export-a2.json) | Cross-anchor tenant A (Account 2, 2 rows; head seq 35984 seals A3's real head). |
 | [`export-a3.json`](export-a3.json) | Cross-anchor tenant B (Account 3, seal seq 29406 seals A2's real head). |

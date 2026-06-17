@@ -81,6 +81,71 @@ export function parseSeal(row) {
   return null;
 }
 
+// Parse a row's action into an AUTHORITY-mandate descriptor, or null if it
+// isn't one. An authority row's `action` is the canonical JSON string with
+// TERSE keys (kept under the contract's ~185-char action cap):
+//   {"t":"authority","fn":...,"amt":<amount_cents>,"cap":<cap_cents>,
+//    "fns":[...functions],"c":"<16-byte sha256-prefix credential commitment>"}.
+// NOTE: this is the ZERO-DEPENDENCY authority LOGIC check — pure JSON parse +
+// number/array comparison, NO crypto. The cryptographic SIGNATURE
+// re-verification (re-recover the EIP-191 user signer, re-verify the agent
+// invocation sig) lives in the SEPARATE authority-verify.mjs, which MAY import
+// the SDK's own offline crypto. The core verifier here stays zero-dependency.
+export function parseAuthority(row) {
+  let a;
+  try { a = JSON.parse(row.action); } catch { return null; }
+  if (!a || a.t !== 'authority') return null;
+  if (typeof a.fn !== 'string') return null;
+  if (typeof a.amt !== 'number') return null;
+  if (typeof a.cap !== 'number') return null;
+  if (!Array.isArray(a.fns)) return null;
+  return {
+    fn: a.fn,
+    amount_cents: a.amt,
+    cap_cents: a.cap,
+    functions: a.fns,
+    commit: typeof a.c === 'string' ? a.c : null,
+    row,
+  };
+}
+
+// ZERO-DEP authority-logic check over an export. For every authority row:
+//   in_mandate  <=>  fn IN functions[]  AND  amount_cents <= cap_cents
+// We then cross-check the row's recorded outcome against the mandate:
+//   - in-mandate row that was DENIED  -> flagged (allowed-but-refused mismatch)
+//   - out-of-mandate row that was ALLOWED -> flagged (escaped the mandate!)
+// Returns { ok, rows: [{seq, fn, amount_cents, cap_cents, in_mandate,
+//   in_functions, within_cap, outcome, consistent}], flagged: [...] }.
+// `ok` is true iff every authority row is consistent (no out-of-mandate ALLOW,
+// and no in-mandate row that was refused for a non-mandate reason isn't itself
+// a contradiction — a refused in-mandate row is allowed: refusal may come from
+// an unrelated grant revocation, so we only HARD-flag out-of-mandate ALLOWs).
+export function verifyAuthority(exportObj) {
+  const rows = [...exportObj.rows].sort((a, b) => a.seq - b.seq);
+  const out = [];
+  const flagged = [];
+  for (const row of rows) {
+    const a = parseAuthority(row);
+    if (!a) continue;
+    const inFunctions = a.functions.includes(a.fn);
+    const withinCap = a.amount_cents <= a.cap_cents;
+    const inMandate = inFunctions && withinCap;
+    // The hard soundness invariant: an OUT-of-mandate action must NOT be
+    // recorded as allowed. (An in-mandate action recorded as denied is fine —
+    // refusal can come from an orthogonal on-chain grant revocation.)
+    const consistent = inMandate || row.outcome !== 'allowed';
+    const entry = {
+      seq: row.seq, fn: a.fn,
+      amount_cents: a.amount_cents, cap_cents: a.cap_cents,
+      in_functions: inFunctions, within_cap: withinCap,
+      in_mandate: inMandate, outcome: row.outcome, consistent,
+    };
+    out.push(entry);
+    if (!consistent) flagged.push(entry);
+  }
+  return { ok: flagged.length === 0, rows: out, flagged };
+}
+
 // ALL "allowed" seal rows in `exportObj` that anchor `peerDid`, oldest-first.
 // We deliberately return EVERY seal, not just the newest: a later weaker or
 // forged seal must NOT be allowed to shadow an earlier honest binding.
@@ -241,9 +306,39 @@ function main() {
     }
   }
 
+  if (argv[0] === '--authority') {
+    // ZERO-DEP authority-logic check. Cryptographic sig re-verification is in
+    // the SEPARATE authority-verify.mjs (which uses the SDK's own offline crypto).
+    const p = argv[1];
+    if (!p) {
+      console.error('usage: node verifier.mjs --authority <export.json>');
+      process.exit(2);
+    }
+    const exp = JSON.parse(readFileSync(p, 'utf8'));
+    const chain = verifyChain(exp);
+    if (!chain.ok) {
+      console.log(`BROKEN AT seq=${chain.brokenSeq}`);
+      process.exit(1);
+    }
+    const va = verifyAuthority(exp);
+    for (const r of va.rows) {
+      const tag = r.in_mandate ? 'IN-MANDATE' : 'OUT-OF-MANDATE';
+      console.log(
+        `seq=${r.seq} fn=${r.fn} amount=${r.amount_cents} cap=${r.cap_cents} ` +
+        `[${tag}] outcome=${r.outcome} consistent=${r.consistent}`,
+      );
+    }
+    if (va.ok) {
+      console.log(`AUTHORITY OK (${va.rows.length} authority row(s); no out-of-mandate ALLOW)`);
+      process.exit(0);
+    }
+    console.log(`AUTHORITY VIOLATION: ${va.flagged.length} out-of-mandate row(s) recorded as allowed`);
+    process.exit(1);
+  }
+
   const path = argv[0];
   if (!path) {
-    console.error('usage: node verifier.mjs <export.json> | --cross <a.json> <b.json>');
+    console.error('usage: node verifier.mjs <export.json> | --cross <a.json> <b.json> | --authority <export.json>');
     process.exit(2);
   }
   const exportObj = JSON.parse(readFileSync(path, 'utf8'));
