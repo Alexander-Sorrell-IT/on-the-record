@@ -212,7 +212,7 @@ CHAIN OK 5 rows
 node render-filing.mjs export.json filing.md
 ```
 ```
-FILING RENDERED -> /media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/filing.md
+FILING RENDERED -> on-the-record/filing.md
 ```
 
 Open `filing.md`: scroll the header (`Verification status | CHAIN OK (2 rows, recomputed client-side)`, chain head `22eef927…d61a`) and the per-entry cited hashes.

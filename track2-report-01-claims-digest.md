@@ -35,7 +35,7 @@ guarantee the digest is supposed to enable is unreachable from the client.
 ### 1. Grep the shipped SDK type defs (verified)
 
 Searched the entire installed package
-`/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/sdk-test/node_modules/@terminal3/t3n-sdk`
+`sdk-test/node_modules/@terminal3/t3n-sdk`
 case-insensitively for every read-side token:
 
 ```

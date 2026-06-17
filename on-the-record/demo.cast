@@ -50,7 +50,7 @@
 [0.122101, "o", "| --- | --- |\r\n"]
 [0.122112, "o", "| System | On the Record — grant-checked action receipt ledger |\r\n"]
 [0.1223, "o", "| Tenant DID (derived from public salt) | `did:t3n:01882ebbf599fcbfc9c6cc562ea4ce7d93135773` |\r\n| Domain-separation salt (public) | `on-the-record:v1:01882ebbf599fcbfc9c6cc562ea4ce7d93135773` |\r\n| Chain head hash | `22eef927bbd43d64c147103da4027a00772ac161aa08c9640d213ff44d37d61a` |\r\n| Receipt rows in filing | 2 |\r\n| Verification status | CHAIN OK (2 rows, recomputed client-side) |\r\n"]
-[0.122327, "o", "| Generated from | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export.json` |\r\n"]
+[0.122327, "o", "| Generated from | `on-the-record/export.json` |\r\n"]
 [0.122496, "o", "| Generated at (UTC) | 2026-06-14T05:37:43.299Z |\r\n\r\n> Evidence model: each row's `hash = SHA256( salt || prev_hash_bytes || canonical_json(row\\ hash) )`. Each entry below CITES its own evidence hash and its `prev_hash` link to the prior row, so every line is independently traceable along the salted hash-chain back to genesis (`prev_hash = 0000000000000000000000000000000000000000000000000000000000000000`).\r\n\r\n"]
 [0.122589, "o", "---\r\n...\r\n"]
 [0.122603, "o", "\r\n"]

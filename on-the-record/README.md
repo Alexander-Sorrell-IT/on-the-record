@@ -73,7 +73,7 @@ export); it is *not* a secret. Each row is:
 ```
 
 The contract source is at
-[`terminal3-agent-mesh/contracts/on-the-record`](../terminal3-agent-mesh/contracts/on-the-record)
+[`contracts/on-the-record`](../contracts/on-the-record)
 (Rust → wasm). Verbs: `record-action` (grant-checked, emits an `allowed` or
 `denied` chained row), `revoke(target_did)` (owner-only), `get-audit`
 (owner-or-auditors), `head()` (returns the chain tail hash, appends nothing),
@@ -237,8 +237,7 @@ not to hold the key?"* — and proves it by construction.
   remain** before doing anything. In the captured run there was nothing left to
   scrub because the keys were never handed to the agent at all (we launch it with
   the keys unset). It also runs with **no model API key**: its brain is the local
-  `claude` CLI invoked over `spawnSync` (same pattern as
-  [`terminal3-agent-mesh/src/agent-buyer.ts`](../terminal3-agent-mesh/src/agent-buyer.ts)).
+  `claude` CLI invoked over `spawnSync` ([`agent-loop.mjs`](agent-loop.mjs)).
 - **The proxy holds the key, alone.** [`proxy/mcp-server.mjs`](proxy/mcp-server.mjs)
   is a **real MCP stdio server** (`@modelcontextprotocol/sdk` v1.29.0). It sources
   Account 3's key from the project `.env` on its OWN side, hands it once to

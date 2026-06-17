@@ -10,7 +10,7 @@
 //       chain itself.
 //
 //   (2) NO MODEL API KEY EITHER. The "brain" is the local `claude` CLI invoked
-//       with spawnSync (same pattern as terminal3-agent-mesh/src/agent-buyer.ts).
+//       with spawnSync.
 //       The agent reasons with NO Anthropic API key in this process.
 //
 // The agent reaches the chain ONLY by calling the custody proxy's MCP tools

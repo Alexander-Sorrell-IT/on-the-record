@@ -11,16 +11,16 @@ network off, and what is proven versus deferred.
 
 ## 1. What ships
 
-All paths are absolute.
+All paths are relative to the repo root.
 
 ### Contract (Rust → wasm)
 
 | Item | Path |
 |---|---|
-| Contract source | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/terminal3-agent-mesh/contracts/on-the-record/src/lib.rs` |
-| Cargo manifest | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/terminal3-agent-mesh/contracts/on-the-record/Cargo.toml` (crate `on-the-record` v0.1.0, MIT) |
-| WIT world | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/terminal3-agent-mesh/contracts/on-the-record/wit/world.wit` |
-| Built wasm (release) | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/terminal3-agent-mesh/contracts/on-the-record/target/wasm32-wasip2/release/on_the_record.wasm` (≈180 KB) |
+| Contract source | `contracts/on-the-record/src/lib.rs` |
+| Cargo manifest | `contracts/on-the-record/Cargo.toml` (crate `on-the-record` v0.1.0, MIT) |
+| WIT world | `contracts/on-the-record/wit/world.wit` |
+| Built wasm (release) | `contracts/on-the-record/target/wasm32-wasip2/release/on_the_record.wasm` (≈180 KB) |
 | Native test target | `cargo test --target x86_64-unknown-linux-gnu` (5 unit + 1 doc-test) |
 
 Verbs: `record-action` (grant-checked; emits an `allowed` or `denied` chained
@@ -40,29 +40,29 @@ Row shape: `{ seq, ts, caller_did, action, outcome('allowed'|'denied'), masked_s
 
 | Item | Path |
 |---|---|
-| Verifier | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/verifier.mjs` |
-| Verifier tests (36/36) | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/verifier.test.mjs` |
-| Filing renderer | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/render-filing.mjs` |
-| Rendered filing (output) | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/filing.md` |
+| Verifier | `on-the-record/verifier.mjs` |
+| Verifier tests (36/36) | `on-the-record/verifier.test.mjs` |
+| Filing renderer | `on-the-record/render-filing.mjs` |
+| Rendered filing (output) | `on-the-record/filing.md` |
 
 ### Exports (captured testnet rows — verbatim, never re-run)
 
 | Item | Path | Contents |
 |---|---|---|
-| Refusal chain | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export.json` | ALLOWED seq 29263 → DENIED-after-revoke seq 29270 (`reason: no_active_grant`) |
-| Cross-anchor tenant A | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export-a2.json` | Account 2, 2 rows; head `4e9e…0619` (seq 35984) seals A3's real head `c4ac…8411` |
-| Cross-anchor tenant B | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export-a3.json` | Account 3 seal seq 29406, head `c4ac…8411`; seals A2's real head `0092…e07a` |
-| Keyless-agent run | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export-agent.json` | 5 rows, CHAIN OK; 3 acts produced by the keyless agent through the proxy (seq 29680 / 29686 / 29692) |
+| Refusal chain | `on-the-record/export.json` | ALLOWED seq 29263 → DENIED-after-revoke seq 29270 (`reason: no_active_grant`) |
+| Cross-anchor tenant A | `on-the-record/export-a2.json` | Account 2, 2 rows; head `4e9e…0619` (seq 35984) seals A3's real head `c4ac…8411` |
+| Cross-anchor tenant B | `on-the-record/export-a3.json` | Account 3 seal seq 29406, head `c4ac…8411`; seals A2's real head `0092…e07a` |
+| Keyless-agent run | `on-the-record/export-agent.json` | 5 rows, CHAIN OK; 3 acts produced by the keyless agent through the proxy (seq 29680 / 29686 / 29692) |
 
 ### MCP custody proxy + keyless agent loop (transport: real MCP stdio — tier 1)
 
 | Item | Path |
 |---|---|
-| MCP stdio custody proxy | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/proxy/mcp-server.mjs` |
-| Custody core (only module that touches the key; closure-private, no key getter) | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/proxy/custody.mjs` |
-| Proxy proof harness (scripted single act over a real MCP `Client`) | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/proxy/prove.mjs` |
-| Credit-floor probe (custody-side, keyless agent stays key-free) | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/proxy/usage-probe.mjs` |
-| Keyless agent loop (brain = `claude` CLI, hands = MCP proxy) | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/agent-loop.mjs` |
+| MCP stdio custody proxy | `on-the-record/proxy/mcp-server.mjs` |
+| Custody core (only module that touches the key; closure-private, no key getter) | `on-the-record/proxy/custody.mjs` |
+| Proxy proof harness (scripted single act over a real MCP `Client`) | `on-the-record/proxy/prove.mjs` |
+| Credit-floor probe (custody-side, keyless agent stays key-free) | `on-the-record/proxy/usage-probe.mjs` |
+| Keyless agent loop (brain = `claude` CLI, hands = MCP proxy) | `on-the-record/agent-loop.mjs` |
 
 The agent process asserts it holds **no** `T3N_API_KEY*` (and no model API key);
 the proxy sources Account 3's key from `.env` on its own side and exposes only
@@ -77,10 +77,10 @@ off the agent so it never gains a key or a read path.
 
 | Item | Path |
 |---|---|
-| Canonical entry README | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/README.md` |
-| Provenance disclosure (mesh-seller lineage) | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/PROVENANCE.md` |
-| Track-2 bug report #1 (`set-claims-digest` write-only sink) | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/track2-report-01-claims-digest.md` |
-| This manifest | `/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/SUBMISSION.md` |
+| Canonical entry README | `on-the-record/README.md` |
+| Provenance disclosure (mesh-seller lineage) | `PROVENANCE.md` |
+| Track-2 bug report #1 (`set-claims-digest` write-only sink) | `track2-report-01-claims-digest.md` |
+| This manifest | `on-the-record/SUBMISSION.md` |
 
 ### On-chain registrations (already done — do not re-run)
 
@@ -95,26 +95,26 @@ off the agent so it never gains a key or a read path.
 ## 2. One-command offline reproduction
 
 No credits, no network, no SDK. Pure Node `crypto` + the `cargo` native target.
-All commands use absolute paths so they run from anywhere.
+All commands are relative to the repo root — run them from the top of the cloned repo.
 
 ```bash
 # (a) refusal chain verifies end-to-end  -> CHAIN OK 2 rows
-node "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/verifier.mjs" \
-     "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export.json"
+node "on-the-record/verifier.mjs" \
+     "on-the-record/export.json"
 
 # (b) two tenants genuinely anchor each other  -> CROSS-ANCHOR OK
-node "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/verifier.mjs" --cross \
-     "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export-a2.json" \
-     "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/export-a3.json"
+node "on-the-record/verifier.mjs" --cross \
+     "on-the-record/export-a2.json" \
+     "on-the-record/export-a3.json"
 
 # (c) verifier self-tests (36 checks incl. adversarial forgery/shadow/rewrite/broken-peer + authority mandate-logic)  -> ALL TESTS PASSED
-node "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/verifier.test.mjs"
+node "on-the-record/verifier.test.mjs"
 
 # (d) render the regulator/audit filing over the verified chain  -> FILING RENDERED
-node "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/on-the-record/render-filing.mjs"
+node "on-the-record/render-filing.mjs"
 
 # (e) contract native tests  -> 5 unit + 1 doc-test pass
-( cd "/media/phantomcore/AI_DRIVE/hackathons/terminal 3 part 2/terminal3-agent-mesh/contracts/on-the-record" \
+( cd "contracts/on-the-record" \
   && cargo test --target x86_64-unknown-linux-gnu )
 ```
 
