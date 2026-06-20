@@ -1,0 +1,9 @@
+caller C balance=901  (sub-10k? true)
+
+(a) INVOKE  : outcome=allowed caller=did:t3n:1b38f2d98ff6d0.. charged=151cr
+(b) REGISTER: UNEXPECTEDLY SUCCEEDED contract_id=188  (charged=750cr)
+
+=== BOUNDARY VERDICT ===
+invoke sub-10k works : true
+register is 10k-gated: false
+INCONCLUSIVE: invokeOk=true floorOnReg=false regErr="UNEXPECTEDLY SUCCEEDED contract_id=188"

@@ -1,0 +1,11 @@
+Watch a task move between AI agents, and watch each one refuse to take it on faith. No single agent here gets to be trusted. When the baton passes, the receiving agent reads the sender's unforgeable identity inside its own secure enclave, re-checks its ledger, and binds it before doing any work. Every node both verifies and is verified.
+
+And it does not hand off to a fixed checker that could be bribed. The next verifier is a random draw, pinned by the chain itself, recomputable by anyone and gameable by no one.
+
+Authority is enforced in the path, not assumed. Revoke an agent's grant, and its very next action is refused, with the refusal recorded as the next link in the chain. An agent cannot act off the record.
+
+Every step is a salted, hash chained, mutually cross anchored receipt. So anyone can download the chains and re-walk the entire route offline, with no network and no trust in any node. Change one byte and it breaks at the exact row. Forge a vouch that never happened and it shows a mismatch.
+
+Other tools ask, after the fact, did the agent lie. This asks, in flight, may this take its next step, and which independent agent vouches for it. Verification moved out of the audit log and into the live control path, built on Terminal 3's cross tenant identity, which we proved runs from any funded account.
+
+No single point of trust. A live, randomly routed mesh where agents verify each other, and you can re-check every step yourself in thirty seconds. The others brought an auditor. We brought the law the agents act under.

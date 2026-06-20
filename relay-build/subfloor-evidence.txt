@@ -1,0 +1,7 @@
+[C(acct1 low)] did=did:t3n:1b38f2d98ff6d0eddc9ceb.. ver=0.1.0 balance=1052
+[A(acct3 host)] did=did:t3n:3f6988bd4faa2548af798e.. ver=0.1.1 balance=9678
+
+FLOOR QUESTION: caller C balance=1052 (under 10000? true). Attempting PAID cross-tenant record-action C->A ...
+RESULT row: outcome=allowed caller_did=did:t3n:1b38f2d98ff6d0eddc9ceb.. seq=46205
+caller balance 1052 -> 901 (delta 151 credits)
+VERDICT: NO 10k FLOOR — a 1052-credit account made a PAID cross-tenant invoke (stamped caller=C, paid 151cr). CLAIM PROVEN.

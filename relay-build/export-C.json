@@ -1,0 +1,49 @@
+{
+  "salt": "on-the-record:v1:1b38f2d98ff6d0eddc9ceb0a14d3987544db7577",
+  "rows": [
+    {
+      "action": "node:online",
+      "caller_did": "did:t3n:1b38f2d98ff6d0eddc9ceb0a14d3987544db7577",
+      "hash": "90df95ac1d0dd0fc31fdc772eb50892c9078ad2da50cd684df4f55edf00a9dbf",
+      "masked_secret": "sk_l…****…38f2",
+      "outcome": "allowed",
+      "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": "",
+      "seq": 45196,
+      "ts": 1781817308
+    },
+    {
+      "action": "relay:hop from=01882ebbf599fcbf ah=2760ea5e5f5f88325d6c23c394a7282fb4b12cfea7cdf242200eec9381f25489",
+      "caller_did": "did:t3n:01882ebbf599fcbfc9c6cc562ea4ce7d93135773",
+      "hash": "3ef64496d8cbf475730d72d1edaa18c50d4ca8c6ebd8506e52385c0b232ceedb",
+      "masked_secret": "sk_l…****…38f2",
+      "outcome": "allowed",
+      "prev_hash": "90df95ac1d0dd0fc31fdc772eb50892c9078ad2da50cd684df4f55edf00a9dbf",
+      "reason": "",
+      "seq": 45225,
+      "ts": 1781817314
+    },
+    {
+      "action": "{\"peer_did\":\"did:t3n:01882ebbf599fcbfc9c6cc562ea4ce7d93135773\",\"peer_head\":\"2760ea5e5f5f88325d6c23c394a7282fb4b12cfea7cdf242200eec9381f25489\",\"type\":\"seal\"}",
+      "caller_did": "did:t3n:1b38f2d98ff6d0eddc9ceb0a14d3987544db7577",
+      "hash": "fb53cbc7a7827fd0a351f15b82d1ad3bf16654f8bc2f60815fb76b5d6d427250",
+      "masked_secret": "",
+      "outcome": "allowed",
+      "prev_hash": "3ef64496d8cbf475730d72d1edaa18c50d4ca8c6ebd8506e52385c0b232ceedb",
+      "reason": "",
+      "seq": 45229,
+      "ts": 1781817314
+    },
+    {
+      "action": "relay:answer result=done",
+      "caller_did": "did:t3n:1b38f2d98ff6d0eddc9ceb0a14d3987544db7577",
+      "hash": "5431cce1facb5e5f1220287597ada4733aeb696498a4fa81578bcd6ebee935f5",
+      "masked_secret": "sk_l…****…38f2",
+      "outcome": "allowed",
+      "prev_hash": "fb53cbc7a7827fd0a351f15b82d1ad3bf16654f8bc2f60815fb76b5d6d427250",
+      "reason": "",
+      "seq": 45233,
+      "ts": 1781817315
+    }
+  ]
+}

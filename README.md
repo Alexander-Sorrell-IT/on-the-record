@@ -1,44 +1,53 @@
 # Terminal 3 — Entry Index
 
-This repository contains one submission entry. Everything that ships is under
-[`on-the-record/`](on-the-record/).
+This repository contains one submission entry. The canonical writeup is
+[`on-the-record/README.md`](on-the-record/README.md); the live mesh is under
+[`relay-build/`](relay-build/).
 
-## The submission: On the Record — THE RECEIPT
+## The submission: On the Record — a no-single-point-of-trust agent mesh
 
-An agent runtime where **acting** and **producing tamper-evident evidence of the
-act** are *one atomic in-enclave transaction*. There is no separate logging step
-that can drift, lie, or be skipped: the receipt **is** the action. Proven on the
-Terminal 3 testnet, and reproducible end-to-end **offline** — no network, no
-SDK, no credits.
+A live trust **topology** for multi-agent action. As a task is relayed
+agent→agent, the receiving agent reads the sender's **unforgeable `did:t3n`**
+inside its own Terminal 3 enclave, re-checks the sender's chain head, and
+**mutually cross-anchors** it *before* the work advances. The next verifier is a
+**random draw pinned by the chain hash**. Every node both verifies and is
+verified, and anyone can re-walk the whole route offline — verification lives in
+the **live control path**, not an after-the-fact log. Proven on the Terminal 3
+testnet (route A→B→C, every hop caller-verified, both pairs `CROSS-ANCHOR OK`),
+and re-checkable end-to-end **offline** — no network, no SDK, no credits.
 
 ## Reproduce it offline in 30 seconds
 
-One command runs the whole narrated proof and exits `0` (pure Node, built-in
-`crypto` only):
+Re-walk the live mesh from the exported chains (pure Node, built-in `crypto`
+only):
+
+```bash
+node on-the-record/verifier.mjs relay-build/export-A.json   # -> CHAIN OK 17 rows
+node on-the-record/verifier.mjs --cross relay-build/export-A.json relay-build/export-B.json  # -> CROSS-ANCHOR OK
+node on-the-record/verifier.test.mjs                        # -> ALL TESTS PASSED (36 checks)
+```
+
+The receipt **proof layer** underneath the mesh has its own one-command demo
+(act + evidence as one transaction, tamper-evidence, the keyless agent):
 
 ```bash
 node on-the-record/demo.mjs
 ```
 
-It walks five sections — act + evidence as one transaction, tamper-evidence,
-cross-anchor (no single point of failure), the keyless agent, and the audit
-filing — recomputing every receipt hash from a public salt against real
-testnet-captured exports.
-
 ## Where to look
 
-- **Submission entry / canonical writeup:** [`on-the-record/README.md`](on-the-record/README.md)
-- **Submission manifest (what shipped, claims, judging axes):** [`on-the-record/SUBMISSION.md`](on-the-record/SUBMISSION.md)
+- **Canonical writeup:** [`on-the-record/README.md`](on-the-record/README.md)
+- **The live mesh (relay + adversarial beats + exports):** [`relay-build/`](relay-build/)
+- **Platform finding — cross-tenant invoke is not 10k-gated:** [`relay-build/boundary-evidence.txt`](relay-build/boundary-evidence.txt)
 - **Provenance & lineage disclosure:** [`PROVENANCE.md`](PROVENANCE.md)
 - **Track-2 bug report #1 (claims-digest read-path gap):** [`track2-report-01-claims-digest.md`](track2-report-01-claims-digest.md)
-- **Demo video script:** [`on-the-record/VIDEO_SCRIPT.md`](on-the-record/VIDEO_SCRIPT.md)
 
 ## Honest framing
 
-The guarantee is a category, not a percentage: a released, offline-reproducible
-receipt runtime where acting and proving are one transaction. Limits are stated
-plainly in the submission — it is tamper-**evident**, not tamper-**proof**; the
-cross-anchor is the mechanism demonstrated with two accounts under our control
-(full independence holds when third parties run the anchors); and no
-"cluster-signed" claim is made, because the SDK read path for it is absent (filed
-as Track-2 #1).
+The guarantee is a category, not a percentage. With three same-owner accounts the
+mesh demonstrates the **mechanism** of committed, recomputable, non-retro-rollable
+random selection — the property that scales to statistical non-collusion at large
+N; we do **not** claim "a jury of strangers." It is tamper-**evident**, not
+tamper-**proof**; the cross-anchor binds each pair up to its last mutual seal; and
+no "cluster-signed" claim is made (the SDK read path for it is absent — filed as
+Track-2 #1).

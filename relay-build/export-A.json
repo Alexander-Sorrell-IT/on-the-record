@@ -1,0 +1,192 @@
+{
+  "salt": "on-the-record:v1:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+  "rows": [
+    {
+      "action": "{\"peer_did\":\"did:t3n:01882ebbf599fcbfc9c6cc562ea4ce7d93135773\",\"peer_head\":\"0092942958fec2bfea808bd2d63804b1977f35212ac70eae5b724d32bd9de07a\",\"type\":\"seal\"}",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "c4acbe4985ffbf61b47698fe56171d01eb2fcea3770b540104c23a7341268411",
+      "masked_secret": "",
+      "outcome": "allowed",
+      "prev_hash": "0000000000000000000000000000000000000000000000000000000000000000",
+      "reason": "",
+      "seq": 29406,
+      "ts": 1781372175
+    },
+    {
+      "action": "proxy-act:invoice-108810",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "40e96e09fed0e6320fb6852fe8a705301f510bb877620ba6a5f86693c35c16da",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "c4acbe4985ffbf61b47698fe56171d01eb2fcea3770b540104c23a7341268411",
+      "reason": "",
+      "seq": 29652,
+      "ts": 1781377109
+    },
+    {
+      "action": "load-policy",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "55252bc98735068d06bbc75e34b049cdd92e175f8ae8cae16a1072f752ee0ff8",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "40e96e09fed0e6320fb6852fe8a705301f510bb877620ba6a5f86693c35c16da",
+      "reason": "",
+      "seq": 29680,
+      "ts": 1781377463
+    },
+    {
+      "action": "process-batch:invoices",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "0210ddacfd30c9b0fb93473705c21c70ad222a5c83cea7cd6aeafccb904695ed",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "55252bc98735068d06bbc75e34b049cdd92e175f8ae8cae16a1072f752ee0ff8",
+      "reason": "",
+      "seq": 29686,
+      "ts": 1781377471
+    },
+    {
+      "action": "flag-anomaly:txn-4471",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "62341a76e2b34c0332359397d45951e84fd916ab9870b8bde2107ea334c1220a",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "0210ddacfd30c9b0fb93473705c21c70ad222a5c83cea7cd6aeafccb904695ed",
+      "reason": "",
+      "seq": 29692,
+      "ts": 1781377478
+    },
+    {
+      "action": "authority-probe-small",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "365e9c26356b3ff6b3c6b90286e7b789ebf89d62224a6eaf7e16b982efc96348",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "62341a76e2b34c0332359397d45951e84fd916ab9870b8bde2107ea334c1220a",
+      "reason": "",
+      "seq": 40404,
+      "ts": 1781672156
+    },
+    {
+      "action": "{\"type\":\"authority\",\"fn\":\"execute-disbursement\",\"amount_cents\":420000,\"cap_cents\":1500000,\"functions\":[\"compute-payroll\",\"execute-disbursement\",\"finalize-audit\"]}",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "c721b13918720eda6b8f14df47738c48adffc183a41f0987b8ed4f06d9d5cba9",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "365e9c26356b3ff6b3c6b90286e7b789ebf89d62224a6eaf7e16b982efc96348",
+      "reason": "",
+      "seq": 40408,
+      "ts": 1781672157
+    },
+    {
+      "action": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "4187eb12b1d5a08fe9e14b1dc7dc2eec2da8b7e405c31e4c2509c6c9e0f9ef43",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "c721b13918720eda6b8f14df47738c48adffc183a41f0987b8ed4f06d9d5cba9",
+      "reason": "",
+      "seq": 40431,
+      "ts": 1781672216
+    },
+    {
+      "action": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "104ce57e36ba4a758d96d5d5f3d02914deb7015a496f2e6c3f98da13ab953948",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "4187eb12b1d5a08fe9e14b1dc7dc2eec2da8b7e405c31e4c2509c6c9e0f9ef43",
+      "reason": "",
+      "seq": 40435,
+      "ts": 1781672217
+    },
+    {
+      "action": "{\"amt\":420000,\"c\":\"9d35c3a97303f063401eb048978b6a8d\",\"cap\":1500000,\"fn\":\"execute-disbursement\",\"fns\":[\"compute-payroll\",\"execute-disbursement\"],\"t\":\"authority\"}",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "a84640b3bba564c43cdb43d149e1ea0c37fef1268de8fc22e73bfeb8d0ef8dd6",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "104ce57e36ba4a758d96d5d5f3d02914deb7015a496f2e6c3f98da13ab953948",
+      "reason": "",
+      "seq": 40448,
+      "ts": 1781672385
+    },
+    {
+      "action": "{\"amt\":2500000,\"c\":\"9d35c3a97303f063401eb048978b6a8d\",\"cap\":1500000,\"fn\":\"execute-disbursement\",\"fns\":[\"compute-payroll\",\"execute-disbursement\"],\"t\":\"authority\"}",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "b44b478508c841987e9cfcbe4067c5b3cff0a63b5560c277464ab8fef94fc9ff",
+      "masked_secret": "",
+      "outcome": "denied",
+      "prev_hash": "a84640b3bba564c43cdb43d149e1ea0c37fef1268de8fc22e73bfeb8d0ef8dd6",
+      "reason": "no_active_grant",
+      "seq": 40455,
+      "ts": 1781672386
+    },
+    {
+      "action": "relay:start u=demo task=t1",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "7e7a34f7ec3d03ccf4ad7be6ca88604b1b297f71af6ff505c138922b905b726c",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "b44b478508c841987e9cfcbe4067c5b3cff0a63b5560c277464ab8fef94fc9ff",
+      "reason": "",
+      "seq": 45011,
+      "ts": 1781815760
+    },
+    {
+      "action": "{\"peer_did\":\"did:t3n:01882ebbf599fcbfc9c6cc562ea4ce7d93135773\",\"peer_head\":\"4e9ebc4e11067ccc3f6fe790bdffb331b0bf0abdf50cce648008a16394660619\",\"type\":\"seal\"}",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "65819271cadc605647cfc69e267bb76f4ca0fa6e1f4fd9949a8099310cb65d88",
+      "masked_secret": "",
+      "outcome": "allowed",
+      "prev_hash": "7e7a34f7ec3d03ccf4ad7be6ca88604b1b297f71af6ff505c138922b905b726c",
+      "reason": "",
+      "seq": 45017,
+      "ts": 1781815761
+    },
+    {
+      "action": "relay:start u=demo task=t1",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "57513c457e04d356c41633da63e9f0b188bb31b308eda2d44deb0e50ce590e78",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "65819271cadc605647cfc69e267bb76f4ca0fa6e1f4fd9949a8099310cb65d88",
+      "reason": "",
+      "seq": 45086,
+      "ts": 1781816879
+    },
+    {
+      "action": "{\"peer_did\":\"did:t3n:01882ebbf599fcbfc9c6cc562ea4ce7d93135773\",\"peer_head\":\"97b6e6cda0ce50c768d903ad270ebf195cd924309a5c06a579b3de6e9deaae79\",\"type\":\"seal\"}",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "2d73b9e9f2c129f5ad2924c341b8869063ba2002a7c37475db642aae1449712b",
+      "masked_secret": "",
+      "outcome": "allowed",
+      "prev_hash": "57513c457e04d356c41633da63e9f0b188bb31b308eda2d44deb0e50ce590e78",
+      "reason": "",
+      "seq": 45093,
+      "ts": 1781816880
+    },
+    {
+      "action": "relay:start u=demo task=t1",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "237c53defde1a702393ab8efb2482826c8fd4022ab7e46d9596f0ce46d5bb002",
+      "masked_secret": "sk_l…****…6988",
+      "outcome": "allowed",
+      "prev_hash": "2d73b9e9f2c129f5ad2924c341b8869063ba2002a7c37475db642aae1449712b",
+      "reason": "",
+      "seq": 45198,
+      "ts": 1781817308
+    },
+    {
+      "action": "{\"peer_did\":\"did:t3n:01882ebbf599fcbfc9c6cc562ea4ce7d93135773\",\"peer_head\":\"67aaa49295b8b9b5cfaf8b6462fefb45d97cc31e07ae1c32937741a311b4a147\",\"type\":\"seal\"}",
+      "caller_did": "did:t3n:3f6988bd4faa2548af798e9f1004b57f8fa1fe19",
+      "hash": "add886d4863df85f5737c71c649f2c3c41e71409d257cd519294b82cd91e0166",
+      "masked_secret": "",
+      "outcome": "allowed",
+      "prev_hash": "237c53defde1a702393ab8efb2482826c8fd4022ab7e46d9596f0ce46d5bb002",
+      "reason": "",
+      "seq": 45204,
+      "ts": 1781817310
+    }
+  ]
+}
