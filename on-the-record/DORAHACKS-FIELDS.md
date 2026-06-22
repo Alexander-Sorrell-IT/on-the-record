@@ -12,7 +12,7 @@ A live, no-single-point-of-trust mesh where AI agents verify each *other*: as a 
 Repo: https://github.com/Alexander-Sorrell-IT/on-the-record · re-walk the live mesh offline (no install, no network, no credits): `node on-the-record/verifier.mjs relay-build/export-A.json` then `node on-the-record/verifier.mjs --cross relay-build/export-A.json relay-build/export-B.json`
 
 ## Demo video
-`<YouTube Unlisted link — upload video-build/mesh/mesh-trailer.mp4>`
+https://youtu.be/V9N4a8xXhYE
 
 ## Track
 Track 1 — Best Agent utilising the Terminal 3 Agent Auth SDK. (Track-2 bug reports filed separately on DoraHacks.)
