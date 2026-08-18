@@ -3,7 +3,7 @@ name = "on-the-record"
 version = "0.1.0"
 edition = "2021"
 description = "On the Record — receipt-runtime contract (salted hash-chained, enclave-enforced audit trail)"
-license = "MIT"
+license = "PolyForm-Noncommercial-1.0.0"
 publish = false
 
 [lib]
